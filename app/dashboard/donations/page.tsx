@@ -18,6 +18,8 @@ import { Donation } from '@/types/dashboard';
 import { Badge } from '@/components/ui/Badge';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
+import { BatchActionBar } from '@/components/ui/BatchActionBar';
 
 export default function DonationsPage() {
   const [donations, setDonations] = useState<Donation[]>([]);
@@ -27,6 +29,11 @@ export default function DonationsPage() {
   const [taxReceiptFilter, setTaxReceiptFilter] = useState<string>('all');
   const [notice, setNotice] = useState<string | null>(null);
 
+  // Pagination & Multi-Selection
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   useEffect(() => {
     loadDonations();
   }, []);
@@ -34,7 +41,10 @@ export default function DonationsPage() {
   const searchParams = useSearchParams();
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q !== null) setSearchQuery(q);
+    if (q !== null) {
+      setSearchQuery(q);
+      setCurrentPage(1);
+    }
   }, [searchParams]);
 
   async function loadDonations() {
@@ -86,6 +96,60 @@ export default function DonationsPage() {
 
     return matchesSearch && matchesProject && matchesTax;
   });
+
+  const totalItems = filteredDonations.length;
+  const paginatedDonations = filteredDonations.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedDonations.length && paginatedDonations.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedDonations.map((d) => d.id));
+    }
+  };
+
+  const handleBulkExportCsv = () => {
+    const selected = donations.filter((d) => selectedIds.includes(d.id));
+    const header = 'Reference,Donateur,Email,Montant,Projet,MethodePaiement,AttestationEmise,Date\n';
+    const rows = selected
+      .map(
+        (d) =>
+          `"${d.reference}","${d.donorName}","${d.donorEmail}",${d.amount},"${d.project}","${d.paymentMethod}",${d.taxReceiptSent},"${d.createdAt}"`
+      )
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `dons_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setNotice(`Export de ${selected.length} don(s) généré avec succès.`);
+    setTimeout(() => setNotice(null), 3000);
+  };
+
+  const handleBulkEmitReceipts = async () => {
+    for (const id of selectedIds) {
+      const item = donations.find((d) => d.id === id);
+      if (item && !item.taxReceiptSent) {
+        await apiClient.toggleTaxReceipt(id);
+      }
+    }
+    await loadDonations();
+    setNotice(`Attestations fiscales émises pour les dons sélectionnés.`);
+    setSelectedIds([]);
+    setTimeout(() => setNotice(null), 3000);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -189,7 +253,11 @@ export default function DonationsPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
             placeholder="Rechercher un donateur, référence ou projet..."
             className="input-premium pl-10"
           />
@@ -198,7 +266,11 @@ export default function DonationsPage() {
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <select
             value={projectFilter}
-            onChange={(e) => setProjectFilter(e.target.value)}
+            onChange={(e) => {
+              setProjectFilter(e.target.value);
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
             className="input-premium cursor-pointer font-medium w-full md:w-auto"
           >
             <option value="all">Tous les projets financés</option>
@@ -209,7 +281,11 @@ export default function DonationsPage() {
 
           <select
             value={taxReceiptFilter}
-            onChange={(e) => setTaxReceiptFilter(e.target.value)}
+            onChange={(e) => {
+              setTaxReceiptFilter(e.target.value);
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
             className="input-premium cursor-pointer font-medium w-full md:w-auto"
           >
             <option value="all">Toutes les attestations</option>
@@ -219,6 +295,29 @@ export default function DonationsPage() {
           </select>
         </div>
       </div>
+
+      {/* Batch Selection Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedIds.length}
+        totalCount={filteredDonations.length}
+        onClearSelection={() => setSelectedIds([])}
+      >
+        <button
+          type="button"
+          onClick={handleBulkExportCsv}
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <span>Exporter CSV</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleBulkEmitReceipts}
+          className="px-3 py-1.5 rounded-xl bg-emerald-500/80 hover:bg-emerald-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <FileCheck2 className="w-3.5 h-3.5" />
+          <span>Émettre Reçus Fiscaux</span>
+        </button>
+      </BatchActionBar>
 
       {/* Donations Table */}
       <div className="panel overflow-hidden">
@@ -239,7 +338,21 @@ export default function DonationsPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
-                  <th className="py-3.5 px-6">Réf. Don</th>
+                  <th className="py-4 pl-6 pr-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={paginatedDonations.length > 0 && selectedIds.length === paginatedDonations.length}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = selectedIds.length > 0 && selectedIds.length < paginatedDonations.length;
+                        }
+                      }}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      aria-label="Sélectionner tous les dons affichés"
+                    />
+                  </th>
+                  <th className="py-3.5 px-4">Réf. Don</th>
                   <th className="py-3.5 px-6">Donateur / Entreprise</th>
                   <th className="py-3.5 px-6">Montant Don</th>
                   <th className="py-3.5 px-6">Projet Assigné</th>
@@ -250,71 +363,97 @@ export default function DonationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredDonations.map((d) => (
-                  <tr key={d.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6 font-mono font-bold text-slate-900 whitespace-nowrap">
-                      {d.reference}
-                    </td>
+                {paginatedDonations.map((d) => {
+                  const isSelected = selectedIds.includes(d.id);
+                  return (
+                    <tr
+                      key={d.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isSelected ? 'bg-blue-50/40' : ''
+                      }`}
+                    >
+                      <td className="py-4 pl-6 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(d.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          aria-label={`Sélectionner ${d.reference}`}
+                        />
+                      </td>
 
-                    <td className="py-4 px-6">
-                      <p className="font-bold text-slate-900">{d.donorName}</p>
-                      <p className="text-[11px] text-slate-400">{d.donorEmail}</p>
-                    </td>
+                      <td className="py-4 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
+                        {d.reference}
+                      </td>
 
-                    <td className="py-4 px-6 font-black text-amber-600 text-sm whitespace-nowrap">
-                      {d.amount.toLocaleString('fr-BE')} €
-                    </td>
+                      <td className="py-4 px-6">
+                        <p className="font-bold text-slate-900">{d.donorName}</p>
+                        <p className="text-[11px] text-slate-400">{d.donorEmail}</p>
+                      </td>
 
-                    <td className="py-4 px-6">
-                      <span className="font-semibold text-slate-800 line-clamp-1">
-                        {d.project}
-                      </span>
-                    </td>
+                      <td className="py-4 px-6 font-black text-amber-600 text-sm whitespace-nowrap">
+                        {d.amount.toLocaleString('fr-BE')} €
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap uppercase font-mono text-[11px] text-slate-600">
-                      {d.paymentMethod === 'bank_transfer'
-                        ? 'Virement Bancaire'
-                        : d.paymentMethod === 'bancontact'
-                        ? 'Bancontact / Payconiq'
-                        : 'Carte Bancaire (Stripe)'}
-                    </td>
+                      <td className="py-4 px-6">
+                        <span className="font-semibold text-slate-800 line-clamp-1">
+                          {d.project}
+                        </span>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {d.taxReceiptSent ? (
-                        <Badge variant="success">Émise & Envoyée</Badge>
-                      ) : d.taxReceiptRequested ? (
-                        <Badge variant="warning">À émettre (≥ 40€)</Badge>
-                      ) : (
-                        <Badge variant="neutral">Non demandée</Badge>
-                      )}
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap uppercase font-mono text-[11px] text-slate-600">
+                        {d.paymentMethod === 'bank_transfer'
+                          ? 'Virement Bancaire'
+                          : d.paymentMethod === 'bancontact'
+                          ? 'Bancontact / Payconiq'
+                          : 'Carte Bancaire (Stripe)'}
+                      </td>
 
-                    <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
-                      {new Date(d.createdAt).toLocaleDateString('fr-BE', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        {d.taxReceiptSent ? (
+                          <Badge variant="success">Émise & Envoyée</Badge>
+                        ) : d.taxReceiptRequested ? (
+                          <Badge variant="warning">À émettre (≥ 40€)</Badge>
+                        ) : (
+                          <Badge variant="neutral">Non demandée</Badge>
+                        )}
+                      </td>
 
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => handleToggleReceipt(d.id, d.donorName)}
-                        className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
-                          d.taxReceiptSent
-                            ? 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                            : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
-                        }`}
-                      >
-                        {d.taxReceiptSent ? 'Marquer Non-Émise' : 'Émettre l’attestation'}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
+                        {new Date(d.createdAt).toLocaleDateString('fr-BE', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => handleToggleReceipt(d.id, d.donorName)}
+                          className={`px-3 py-1.5 rounded-lg border text-xs font-semibold transition-colors ${
+                            d.taxReceiptSent
+                              ? 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                              : 'bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100'
+                          }`}
+                        >
+                          {d.taxReceiptSent ? 'Marquer Non-Émise' : 'Émettre l’attestation'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </div>
     </div>
   );

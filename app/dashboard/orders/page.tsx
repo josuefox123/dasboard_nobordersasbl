@@ -19,6 +19,8 @@ import { Order, PaymentStatus, ShippingStatus } from '@/types/dashboard';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
+import { BatchActionBar } from '@/components/ui/BatchActionBar';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -26,6 +28,11 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<string>('all');
   const [shippingFilter, setShippingFilter] = useState<string>('all');
+
+  // Pagination & Selection
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Modals state
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -41,7 +48,10 @@ export default function OrdersPage() {
   const searchParams = useSearchParams();
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q !== null) setSearchQuery(q);
+    if (q !== null) {
+      setSearchQuery(q);
+      setCurrentPage(1);
+    }
   }, [searchParams]);
 
   async function loadOrders() {
@@ -98,6 +108,57 @@ export default function OrdersPage() {
 
     return matchesSearch && matchesPayment && matchesShipping;
   });
+
+  const totalItems = filteredOrders.length;
+  const paginatedOrders = filteredOrders.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedOrders.length && paginatedOrders.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedOrders.map((o) => o.id));
+    }
+  };
+
+  const handleBulkExport = () => {
+    const selected = orders.filter((o) => selectedIds.includes(o.id));
+    const header = 'Numero,Client,Email,Montant,Paiement,Livraison,Date\n';
+    const rows = selected
+      .map(
+        (o) =>
+          `"${o.orderNumber}","${o.customerName}","${o.customerEmail}",${o.totalAmount},"${o.paymentStatus}","${o.shippingStatus}","${o.createdAt}"`
+      )
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `commandes_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setActionNotice(`Export de ${selected.length} commande(s) généré avec succès.`);
+    setTimeout(() => setActionNotice(null), 3000);
+  };
+
+  const handleBulkShip = async () => {
+    for (const id of selectedIds) {
+      await apiClient.updateOrderStatus(id, 'in_transit');
+    }
+    await loadOrders();
+    setActionNotice(`${selectedIds.length} commande(s) marquée(s) comme expédiée(s).`);
+    setSelectedIds([]);
+    setTimeout(() => setActionNotice(null), 3000);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -188,6 +249,29 @@ export default function OrdersPage() {
         </div>
       </div>
 
+      {/* Batch Selection Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedIds.length}
+        totalCount={filteredOrders.length}
+        onClearSelection={() => setSelectedIds([])}
+      >
+        <button
+          type="button"
+          onClick={handleBulkExport}
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <span>Exporter CSV</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleBulkShip}
+          className="px-3 py-1.5 rounded-xl bg-blue-500/80 hover:bg-blue-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <Truck className="w-3.5 h-3.5" />
+          <span>Marquer expédiées ({selectedIds.length})</span>
+        </button>
+      </BatchActionBar>
+
       {/* Orders Table */}
       <div className="panel overflow-hidden">
         {loading ? (
@@ -207,7 +291,21 @@ export default function OrdersPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
-                  <th className="py-3.5 px-6">N° Commande</th>
+                  <th className="py-4 pl-6 pr-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={paginatedOrders.length > 0 && selectedIds.length === paginatedOrders.length}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = selectedIds.length > 0 && selectedIds.length < paginatedOrders.length;
+                        }
+                      }}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      aria-label="Sélectionner toutes les commandes affichées"
+                    />
+                  </th>
+                  <th className="py-3.5 px-4">N° Commande</th>
                   <th className="py-3.5 px-6">Client</th>
                   <th className="py-3.5 px-6">Articles</th>
                   <th className="py-3.5 px-6">Total</th>
@@ -218,101 +316,127 @@ export default function OrdersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredOrders.map((order) => (
-                  <tr key={order.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6 font-mono font-bold text-slate-900 whitespace-nowrap">
-                      {order.orderNumber}
-                    </td>
+                {paginatedOrders.map((order) => {
+                  const isSelected = selectedIds.includes(order.id);
+                  return (
+                    <tr
+                      key={order.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isSelected ? 'bg-blue-50/40' : ''
+                      }`}
+                    >
+                      <td className="py-4 pl-6 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(order.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          aria-label={`Sélectionner la commande ${order.orderNumber}`}
+                        />
+                      </td>
 
-                    <td className="py-4 px-6">
-                      <p className="font-semibold text-slate-900">{order.customerName}</p>
-                      <p className="text-[11px] text-slate-400">{order.customerEmail}</p>
-                    </td>
+                      <td className="py-4 px-4 font-mono font-bold text-slate-900 whitespace-nowrap">
+                        {order.orderNumber}
+                      </td>
 
-                    <td className="py-4 px-6">
-                      <div className="space-y-0.5">
-                        {order.items.map((it, idx) => (
-                          <div key={idx} className="text-slate-800 line-clamp-1">
-                            <span className="font-semibold text-[#0B3C68]">{it.quantity}x</span>{' '}
-                            {it.productName}
-                          </div>
-                        ))}
-                      </div>
-                    </td>
+                      <td className="py-4 px-6">
+                        <p className="font-semibold text-slate-900">{order.customerName}</p>
+                        <p className="text-[11px] text-slate-400">{order.customerEmail}</p>
+                      </td>
 
-                    <td className="py-4 px-6 font-extrabold text-slate-900 text-sm whitespace-nowrap">
-                      {order.totalAmount.toLocaleString('fr-BE')} €
-                    </td>
+                      <td className="py-4 px-6">
+                        <div className="space-y-0.5">
+                          {order.items.map((it, idx) => (
+                            <div key={idx} className="text-slate-800 line-clamp-1">
+                              <span className="font-semibold text-[#0B3C68]">{it.quantity}x</span>{' '}
+                              {it.productName}
+                            </div>
+                          ))}
+                        </div>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {order.paymentStatus === 'paid' && (
-                        <Badge variant="success">Payé</Badge>
-                      )}
-                      {order.paymentStatus === 'pending' && (
-                        <Badge variant="warning">En attente</Badge>
-                      )}
-                      {order.paymentStatus === 'refunded' && (
-                        <Badge variant="error">Remboursé</Badge>
-                      )}
-                      {order.refundReason && (
-                        <p className="text-[10px] text-rose-700 italic mt-1 max-w-[150px] truncate">
-                          {order.refundReason}
-                        </p>
-                      )}
-                    </td>
+                      <td className="py-4 px-6 font-extrabold text-slate-900 text-sm whitespace-nowrap">
+                        {order.totalAmount.toLocaleString('fr-BE')} €
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {order.shippingStatus === 'delivered' && (
-                        <Badge variant="success">Livré</Badge>
-                      )}
-                      {order.shippingStatus === 'in_transit' && (
-                        <Badge variant="info">bpost en cours</Badge>
-                      )}
-                      {order.shippingStatus === 'ready_for_pickup' && (
-                        <Badge variant="secondary">Prêt à l’atelier</Badge>
-                      )}
-                      {order.shippingStatus === 'pending' && (
-                        <Badge variant="warning">À expédier</Badge>
-                      )}
-                    </td>
-
-                    <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
-                      {new Date(order.createdAt).toLocaleDateString('fr-BE', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
-
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleOpenDetail(order)}
-                          className="px-2.5 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors font-medium flex items-center gap-1"
-                          title="Voir le détail et statut"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Détails</span>
-                        </button>
-
+                      <td className="py-4 px-6 whitespace-nowrap">
                         {order.paymentStatus === 'paid' && (
-                          <button
-                            onClick={() => handleOpenRefund(order)}
-                            className="px-2.5 py-1 text-rose-700 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors font-medium flex items-center gap-1"
-                            title="Effectuer un remboursement"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                            <span>Rembourser</span>
-                          </button>
+                          <Badge variant="success">Payé</Badge>
                         )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                        {order.paymentStatus === 'pending' && (
+                          <Badge variant="warning">En attente</Badge>
+                        )}
+                        {order.paymentStatus === 'refunded' && (
+                          <Badge variant="error">Remboursé</Badge>
+                        )}
+                        {order.refundReason && (
+                          <p className="text-[10px] text-rose-700 italic mt-1 max-w-[150px] truncate">
+                            {order.refundReason}
+                          </p>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        {order.shippingStatus === 'delivered' && (
+                          <Badge variant="success">Livré</Badge>
+                        )}
+                        {order.shippingStatus === 'in_transit' && (
+                          <Badge variant="info">bpost en cours</Badge>
+                        )}
+                        {order.shippingStatus === 'ready_for_pickup' && (
+                          <Badge variant="secondary">Prêt à l’atelier</Badge>
+                        )}
+                        {order.shippingStatus === 'pending' && (
+                          <Badge variant="warning">À expédier</Badge>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
+                        {new Date(order.createdAt).toLocaleDateString('fr-BE', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenDetail(order)}
+                            className="px-2.5 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors font-medium flex items-center gap-1"
+                            title="Voir le détail et statut"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Détails</span>
+                          </button>
+
+                          {order.paymentStatus === 'paid' && (
+                            <button
+                              onClick={() => handleOpenRefund(order)}
+                              className="px-2.5 py-1 text-rose-700 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors font-medium flex items-center gap-1"
+                              title="Effectuer un remboursement"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                              <span>Rembourser</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </div>
 
       {/* Order Detail Modal */}

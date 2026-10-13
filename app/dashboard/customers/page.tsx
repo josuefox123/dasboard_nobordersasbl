@@ -18,6 +18,8 @@ import { Customer } from '@/types/dashboard';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
+import { BatchActionBar } from '@/components/ui/BatchActionBar';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -26,6 +28,11 @@ export default function CustomersPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
 
+  // Pagination & Selection
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+
   useEffect(() => {
     loadCustomers();
   }, []);
@@ -33,7 +40,10 @@ export default function CustomersPage() {
   const searchParams = useSearchParams();
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q !== null) setSearchQuery(q);
+    if (q !== null) {
+      setSearchQuery(q);
+      setCurrentPage(1);
+    }
   }, [searchParams]);
 
   async function loadCustomers() {
@@ -56,6 +66,45 @@ export default function CustomersPage() {
 
     return matchesSearch && matchesStatus;
   });
+
+  const totalItems = filteredCustomers.length;
+  const paginatedCustomers = filteredCustomers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedCustomers.length && paginatedCustomers.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedCustomers.map((c) => c.id));
+    }
+  };
+
+  const handleBulkExport = () => {
+    const selected = customers.filter((c) => selectedIds.includes(c.id));
+    const header = 'ID,Nom,Email,Telephone,Ville,Pays,Commandes,TotalDepense,Statut\n';
+    const rows = selected
+      .map(
+        (c) =>
+          `"${c.id}","${c.name}","${c.email}","${c.phone}","${c.city}","${c.country}",${c.totalOrders},${c.totalSpent},"${c.status}"`
+      )
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `clients_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   const totalSpentAll = customers.reduce((sum, c) => sum + c.totalSpent, 0);
   const activeCount = customers.filter((c) => c.status === 'active').length;
@@ -123,6 +172,21 @@ export default function CustomersPage() {
         </div>
       </div>
 
+      {/* Batch Selection Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedIds.length}
+        totalCount={filteredCustomers.length}
+        onClearSelection={() => setSelectedIds([])}
+      >
+        <button
+          type="button"
+          onClick={handleBulkExport}
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <span>Exporter CSV</span>
+        </button>
+      </BatchActionBar>
+
       {/* Customers Table */}
       <div className="panel overflow-hidden">
         {loading ? (
@@ -142,7 +206,21 @@ export default function CustomersPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
-                  <th className="py-3.5 px-6">Client</th>
+                  <th className="py-4 pl-6 pr-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={paginatedCustomers.length > 0 && selectedIds.length === paginatedCustomers.length}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = selectedIds.length > 0 && selectedIds.length < paginatedCustomers.length;
+                        }
+                      }}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      aria-label="Sélectionner tous les clients affichés"
+                    />
+                  </th>
+                  <th className="py-3.5 px-4">Client</th>
                   <th className="py-3.5 px-6">Contact</th>
                   <th className="py-3.5 px-6">Localisation</th>
                   <th className="py-3.5 px-6 text-center">Commandes</th>
@@ -153,81 +231,106 @@ export default function CustomersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredCustomers.map((cust) => (
-                  <tr key={cust.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0B3C68] font-bold flex items-center justify-center text-xs shrink-0">
-                          {cust.name.slice(0, 2).toUpperCase()}
+                {paginatedCustomers.map((cust) => {
+                  const isSelected = selectedIds.includes(cust.id);
+                  return (
+                    <tr
+                      key={cust.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isSelected ? 'bg-blue-50/40' : ''
+                      }`}
+                    >
+                      <td className="py-4 pl-6 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(cust.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          aria-label={`Sélectionner ${cust.name}`}
+                        />
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0B3C68] font-bold flex items-center justify-center text-xs shrink-0">
+                            {cust.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900">{cust.name}</p>
+                            <p className="text-[11px] text-slate-400 font-mono">ID: {cust.id}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-900">{cust.name}</p>
-                          <p className="text-[11px] text-slate-400 font-mono">ID: {cust.id}</p>
-                        </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="py-4 px-6">
-                      <div className="space-y-0.5">
+                      <td className="py-4 px-6">
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-1.5 text-slate-700">
+                            <Mail className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{cust.email}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
+                            <Phone className="w-3.5 h-3.5 text-slate-400" />
+                            <span>{cust.phone}</span>
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-6">
                         <div className="flex items-center gap-1.5 text-slate-700">
-                          <Mail className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{cust.email}</span>
+                          <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                          <span>{cust.city}, {cust.country}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 text-slate-500 text-[11px]">
-                          <Phone className="w-3.5 h-3.5 text-slate-400" />
-                          <span>{cust.phone}</span>
-                        </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-1.5 text-slate-700">
-                        <MapPin className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                        <span>{cust.city}, {cust.country}</span>
-                      </div>
-                    </td>
+                      <td className="py-4 px-6 text-center font-bold text-slate-900">
+                        <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                          {cust.totalOrders}
+                        </span>
+                      </td>
 
-                    <td className="py-4 px-6 text-center font-bold text-slate-900">
-                      <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
-                        {cust.totalOrders}
-                      </span>
-                    </td>
+                      <td className="py-4 px-6 font-extrabold text-[#0B3C68] text-sm whitespace-nowrap">
+                        {cust.totalSpent.toLocaleString('fr-BE')} €
+                      </td>
 
-                    <td className="py-4 px-6 font-extrabold text-[#0B3C68] text-sm whitespace-nowrap">
-                      {cust.totalSpent.toLocaleString('fr-BE')} €
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        {cust.status === 'active' ? (
+                          <Badge variant="success">Actif</Badge>
+                        ) : (
+                          <Badge variant="neutral">Inactif</Badge>
+                        )}
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {cust.status === 'active' ? (
-                        <Badge variant="success">Actif</Badge>
-                      ) : (
-                        <Badge variant="neutral">Inactif</Badge>
-                      )}
-                    </td>
+                      <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
+                        {new Date(cust.lastOrderDate).toLocaleDateString('fr-BE', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
 
-                    <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
-                      {new Date(cust.lastOrderDate).toLocaleDateString('fr-BE', {
-                        day: '2-digit',
-                        month: 'short',
-                        year: 'numeric',
-                      })}
-                    </td>
-
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => setSelectedCustomer(cust)}
-                        className="px-2.5 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors font-medium inline-flex items-center gap-1"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>Fiche</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => setSelectedCustomer(cust)}
+                          className="px-2.5 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors font-medium inline-flex items-center gap-1"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Fiche</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </div>
 
       {/* Customer Detail Modal */}

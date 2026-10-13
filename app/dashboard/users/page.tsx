@@ -9,20 +9,29 @@ import {
   Lock,
   CheckCircle2,
   Info,
+  Search,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { DashboardUser, UserRole } from '@/types/dashboard';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
+import { BatchActionBar } from '@/components/ui/BatchActionBar';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<DashboardUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState<DashboardUser | null>(null);
   const [editRole, setEditRole] = useState<UserRole>('manager');
   const [editStatus, setEditStatus] = useState<'active' | 'suspended'>('active');
   const [notice, setNotice] = useState<string | null>(null);
+
+  // Pagination & Multi-Selection
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
     loadUsers();
@@ -54,6 +63,55 @@ export default function UsersPage() {
     setTimeout(() => setNotice(null), 3000);
   };
 
+  const filteredUsers = users.filter((u) => {
+    const matchesSearch =
+      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      u.roleLabel.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesSearch;
+  });
+
+  const totalItems = filteredUsers.length;
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedUsers.length && paginatedUsers.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedUsers.map((u) => u.id));
+    }
+  };
+
+  const handleBulkExportCsv = () => {
+    const selected = users.filter((u) => selectedIds.includes(u.id));
+    const header = 'ID,Nom,Email,Role,Statut,DerniereConnexion\n';
+    const rows = selected
+      .map(
+        (u) =>
+          `"${u.id}","${u.name}","${u.email}","${u.roleLabel}","${u.status}","${u.lastLogin || 'Jamais'}"`
+      )
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `utilisateurs_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setNotice(`Export de ${selected.length} utilisateur(s) généré avec succès.`);
+    setTimeout(() => setNotice(null), 3000);
+  };
+
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Title */}
@@ -81,6 +139,39 @@ export default function UsersPage() {
         </div>
       )}
 
+      {/* Search Bar */}
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="relative w-full md:max-w-md">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
+            placeholder="Rechercher par nom, email ou rôle..."
+            className="input-premium pl-10"
+          />
+        </div>
+      </div>
+
+      {/* Batch Selection Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedIds.length}
+        totalCount={filteredUsers.length}
+        onClearSelection={() => setSelectedIds([])}
+      >
+        <button
+          type="button"
+          onClick={handleBulkExportCsv}
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <span>Exporter CSV</span>
+        </button>
+      </BatchActionBar>
+
       {/* Users Table */}
       <div className="panel overflow-hidden">
         {loading ? (
@@ -89,12 +180,31 @@ export default function UsersPage() {
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
           </div>
+        ) : filteredUsers.length === 0 ? (
+          <div className="p-12 text-center text-slate-500">
+            <UserCheck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
+            <p className="font-semibold text-slate-700">Aucun utilisateur trouvé</p>
+          </div>
         ) : (
           <div className="overflow-x-auto -mx-6 -my-6">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
-                  <th className="py-4 px-6">Utilisateur</th>
+                  <th className="py-4 pl-6 pr-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={paginatedUsers.length > 0 && selectedIds.length === paginatedUsers.length}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = selectedIds.length > 0 && selectedIds.length < paginatedUsers.length;
+                        }
+                      }}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      aria-label="Sélectionner tous les utilisateurs affichés"
+                    />
+                  </th>
+                  <th className="py-4 px-4">Utilisateur</th>
                   <th className="py-4 px-6">Rôle</th>
                   <th className="py-4 px-6">Statut</th>
                   <th className="py-4 px-6">Permissions Actives</th>
@@ -103,66 +213,92 @@ export default function UsersPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-slate-900 text-amber-300 font-bold flex items-center justify-center text-xs shadow-sm">
-                          {user.name.slice(0, 2).toUpperCase()}
+                {paginatedUsers.map((user) => {
+                  const isSelected = selectedIds.includes(user.id);
+                  return (
+                    <tr
+                      key={user.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isSelected ? 'bg-blue-50/40' : ''
+                      }`}
+                    >
+                      <td className="py-4 pl-6 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(user.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          aria-label={`Sélectionner ${user.name}`}
+                        />
+                      </td>
+
+                      <td className="py-4 px-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-9 h-9 rounded-full bg-slate-900 text-amber-300 font-bold flex items-center justify-center text-xs shadow-sm">
+                            {user.name.slice(0, 2).toUpperCase()}
+                          </div>
+                          <div>
+                            <p className="font-bold text-slate-900">{user.name}</p>
+                            <p className="text-[11px] text-slate-400">{user.email}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-bold text-slate-900">{user.name}</p>
-                          <p className="text-[11px] text-slate-400">{user.email}</p>
+                      </td>
+
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span className="font-semibold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg">
+                          {user.roleLabel}
+                        </span>
+                      </td>
+
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        {user.status === 'active' ? (
+                          <Badge variant="success">Actif</Badge>
+                        ) : (
+                          <Badge variant="error">Suspendu</Badge>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-6">
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {user.permissions.map((perm) => (
+                            <span
+                              key={perm}
+                              className="text-[10px] bg-blue-50 text-[#0B3C68] font-mono px-1.5 py-0.5 rounded border border-blue-100"
+                            >
+                              {perm}
+                            </span>
+                          ))}
                         </div>
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <span className="font-semibold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-lg">
-                        {user.roleLabel}
-                      </span>
-                    </td>
+                      <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
+                        {user.lastLogin || 'Jamais'}
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {user.status === 'active' ? (
-                        <Badge variant="success">Actif</Badge>
-                      ) : (
-                        <Badge variant="error">Suspendu</Badge>
-                      )}
-                    </td>
-
-                    <td className="py-4 px-6">
-                      <div className="flex flex-wrap gap-1 max-w-xs">
-                        {user.permissions.map((perm) => (
-                          <span
-                            key={perm}
-                            className="text-[10px] bg-blue-50 text-[#0B3C68] font-mono px-1.5 py-0.5 rounded border border-blue-100"
-                          >
-                            {perm}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-
-                    <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
-                      {user.lastLogin || 'Jamais'}
-                    </td>
-
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <button
-                        onClick={() => handleOpenEdit(user)}
-                        className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 font-semibold transition-colors inline-flex items-center gap-1.5"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                        <span>Modifier rôle</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <button
+                          onClick={() => handleOpenEdit(user)}
+                          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 font-semibold transition-colors inline-flex items-center gap-1.5"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          <span>Modifier rôle</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </div>
 
       {/* Permissions Matrix Reference Table */}

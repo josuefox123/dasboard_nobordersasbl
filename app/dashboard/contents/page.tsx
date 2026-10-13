@@ -19,6 +19,8 @@ import { ContentItem, ContentType } from '@/types/dashboard';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
+import { BatchActionBar } from '@/components/ui/BatchActionBar';
 
 export default function ContentsPage() {
   const [contents, setContents] = useState<ContentItem[]>([]);
@@ -26,6 +28,11 @@ export default function ContentsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [localeFilter, setLocaleFilter] = useState<string>('all');
+
+  // Pagination & Multi-Selection
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -39,7 +46,10 @@ export default function ContentsPage() {
   const searchParams = useSearchParams();
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q !== null) setSearchQuery(q);
+    if (q !== null) {
+      setSearchQuery(q);
+      setCurrentPage(1);
+    }
   }, [searchParams]);
 
   async function loadContents() {
@@ -70,6 +80,7 @@ export default function ContentsPage() {
     if (confirm(`Confirmez-vous la suppression de "${title}" ?`)) {
       await apiClient.deleteContent(id);
       await loadContents();
+      setSelectedIds((prev) => prev.filter((i) => i !== id));
       setNotice(`Contenu "${title}" supprimé.`);
       setTimeout(() => setNotice(null), 3000);
     }
@@ -97,6 +108,58 @@ export default function ContentsPage() {
 
     return matchesSearch && matchesType && matchesLocale;
   });
+
+  const totalItems = filteredContents.length;
+  const paginatedContents = filteredContents.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedContents.length && paginatedContents.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedContents.map((c) => c.id));
+    }
+  };
+
+  const handleBulkExportCsv = () => {
+    const selected = contents.filter((c) => selectedIds.includes(c.id));
+    const header = 'ID,Titre,Slug,Type,Langue,Statut,Auteur,Vues,DerniereMiseAJour\n';
+    const rows = selected
+      .map(
+        (c) =>
+          `"${c.id}","${c.title}","${c.slug}","${c.type}","${c.locale}","${c.status}","${c.author}",${c.viewsCount},"${c.updatedAt}"`
+      )
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `contenus_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setNotice(`Export de ${selected.length} contenu(s) généré avec succès.`);
+    setTimeout(() => setNotice(null), 3000);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!confirm(`Supprimer les ${selectedIds.length} contenus sélectionnés ?`)) return;
+    for (const id of selectedIds) {
+      await apiClient.deleteContent(id);
+    }
+    await loadContents();
+    setNotice(`${selectedIds.length} contenu(s) supprimé(s).`);
+    setSelectedIds([]);
+    setTimeout(() => setNotice(null), 3000);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -134,7 +197,11 @@ export default function ContentsPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
             placeholder="Rechercher par titre ou auteur..."
             className="input-premium pl-10"
           />
@@ -143,7 +210,11 @@ export default function ContentsPage() {
         <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
           <select
             value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
+            onChange={(e) => {
+              setTypeFilter(e.target.value);
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
             className="input-premium cursor-pointer font-medium w-full md:w-auto"
           >
             <option value="all">Tous les types</option>
@@ -154,7 +225,11 @@ export default function ContentsPage() {
 
           <select
             value={localeFilter}
-            onChange={(e) => setLocaleFilter(e.target.value)}
+            onChange={(e) => {
+              setLocaleFilter(e.target.value);
+              setCurrentPage(1);
+              setSelectedIds([]);
+            }}
             className="input-premium cursor-pointer font-medium w-full md:w-auto"
           >
             <option value="all">Toutes les langues</option>
@@ -164,6 +239,29 @@ export default function ContentsPage() {
           </select>
         </div>
       </div>
+
+      {/* Batch Selection Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedIds.length}
+        totalCount={filteredContents.length}
+        onClearSelection={() => setSelectedIds([])}
+      >
+        <button
+          type="button"
+          onClick={handleBulkExportCsv}
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <span>Exporter CSV</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleBulkDelete}
+          className="px-3 py-1.5 rounded-xl bg-rose-500/80 hover:bg-rose-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>Supprimer ({selectedIds.length})</span>
+        </button>
+      </BatchActionBar>
 
       {/* Content Table */}
       <div className="panel overflow-hidden">
@@ -184,7 +282,21 @@ export default function ContentsPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
-                  <th className="py-3.5 px-6">Titre & Slug</th>
+                  <th className="py-4 pl-6 pr-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={paginatedContents.length > 0 && selectedIds.length === paginatedContents.length}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = selectedIds.length > 0 && selectedIds.length < paginatedContents.length;
+                        }
+                      }}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      aria-label="Sélectionner tous les contenus affichés"
+                    />
+                  </th>
+                  <th className="py-3.5 px-4">Titre & Slug</th>
                   <th className="py-3.5 px-6">Type</th>
                   <th className="py-3.5 px-6">Langue</th>
                   <th className="py-3.5 px-6">Statut</th>
@@ -195,73 +307,99 @@ export default function ContentsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredContents.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6 max-w-sm">
-                      <p className="font-bold text-slate-900 text-sm line-clamp-1">{item.title}</p>
-                      <p className="text-[11px] text-slate-400 font-mono">/{item.slug}</p>
-                    </td>
+                {paginatedContents.map((item) => {
+                  const isSelected = selectedIds.includes(item.id);
+                  return (
+                    <tr
+                      key={item.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isSelected ? 'bg-blue-50/40' : ''
+                      }`}
+                    >
+                      <td className="py-4 pl-6 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(item.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          aria-label={`Sélectionner ${item.title}`}
+                        />
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <span className="capitalize px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
-                        {item.type === 'article'
-                          ? 'Article'
-                          : item.type === 'event'
-                          ? 'Événement'
-                          : 'Page'}
-                      </span>
-                    </td>
+                      <td className="py-4 px-4 max-w-sm">
+                        <p className="font-bold text-slate-900 text-sm line-clamp-1">{item.title}</p>
+                        <p className="text-[11px] text-slate-400 font-mono">/{item.slug}</p>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <span className="uppercase font-bold text-[11px] px-2 py-0.5 rounded bg-blue-50 text-[#0B3C68] border border-blue-100">
-                        {item.locale}
-                      </span>
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span className="capitalize px-2 py-0.5 rounded bg-slate-100 text-slate-700 font-medium">
+                          {item.type === 'article'
+                            ? 'Article'
+                            : item.type === 'event'
+                            ? 'Événement'
+                            : 'Page'}
+                        </span>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {item.status === 'published' ? (
-                        <Badge variant="success">Publié</Badge>
-                      ) : (
-                        <Badge variant="warning">Brouillon</Badge>
-                      )}
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span className="uppercase font-bold text-[11px] px-2 py-0.5 rounded bg-blue-50 text-[#0B3C68] border border-blue-100">
+                          {item.locale}
+                        </span>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap text-slate-700">
-                      {item.author}
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        {item.status === 'published' ? (
+                          <Badge variant="success">Publié</Badge>
+                        ) : (
+                          <Badge variant="warning">Brouillon</Badge>
+                        )}
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap font-mono text-slate-600">
-                      {item.viewsCount}
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap text-slate-700">
+                        {item.author}
+                      </td>
 
-                    <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
-                      {item.updatedAt}
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap font-mono text-slate-600">
+                        {item.viewsCount}
+                      </td>
 
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleOpenEdit(item)}
-                          className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item.id, item.title)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
+                        {item.updatedAt}
+                      </td>
+
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEdit(item)}
+                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(item.id, item.title)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </div>
 
       {/* Modal Add / Edit Content */}

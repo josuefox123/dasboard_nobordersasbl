@@ -19,6 +19,8 @@ import { Product, ProductCategory } from '@/types/dashboard';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { Pagination } from '@/components/ui/Pagination';
+import { BatchActionBar } from '@/components/ui/BatchActionBar';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,6 +28,11 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
+
+  // Pagination & Selection
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -40,7 +47,10 @@ export default function ProductsPage() {
   const searchParams = useSearchParams();
   useEffect(() => {
     const q = searchParams.get('q');
-    if (q !== null) setSearchQuery(q);
+    if (q !== null) {
+      setSearchQuery(q);
+      setCurrentPage(1);
+    }
   }, [searchParams]);
 
   async function loadProducts() {
@@ -118,6 +128,56 @@ export default function ProductsPage() {
 
     return matchesCategory && matchesSearch && matchesStock;
   });
+
+  const totalItems = filteredProducts.length;
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === paginatedProducts.length && paginatedProducts.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(paginatedProducts.map((p) => p.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (confirm(`Confirmez-vous la suppression de ${selectedIds.length} produit(s) ?`)) {
+      for (const id of selectedIds) {
+        await apiClient.deleteProduct(id);
+      }
+      await loadProducts();
+      setSelectedIds([]);
+      setFeedbackMsg(`${selectedIds.length} produit(s) supprimé(s).`);
+      setTimeout(() => setFeedbackMsg(null), 3000);
+    }
+  };
+
+  const handleBulkExport = () => {
+    const selected = products.filter((p) => selectedIds.includes(p.id));
+    const header = 'ID,Nom,SKU,Categorie,Prix,Stock,Statut\n';
+    const rows = selected
+      .map((p) => `"${p.id}","${p.name}","${p.sku}","${p.categoryLabel}",${p.price},${p.stock},"${p.status}"`)
+      .join('\n');
+    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `produits_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setFeedbackMsg(`Export de ${selected.length} produit(s) généré avec succès.`);
+    setTimeout(() => setFeedbackMsg(null), 3000);
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -226,6 +286,29 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Batch Selection Action Bar */}
+      <BatchActionBar
+        selectedCount={selectedIds.length}
+        totalCount={filteredProducts.length}
+        onClearSelection={() => setSelectedIds([])}
+      >
+        <button
+          type="button"
+          onClick={handleBulkExport}
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <span>Exporter CSV</span>
+        </button>
+        <button
+          type="button"
+          onClick={handleBulkDelete}
+          className="px-3 py-1.5 rounded-xl bg-rose-500/80 hover:bg-rose-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span>Supprimer ({selectedIds.length})</span>
+        </button>
+      </BatchActionBar>
+
       {/* Products Table */}
       <div className="panel overflow-hidden">
         {loading ? (
@@ -246,7 +329,21 @@ export default function ProductsPage() {
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
-                  <th className="py-4 px-6">Modèle / Article</th>
+                  <th className="py-4 pl-6 pr-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={paginatedProducts.length > 0 && selectedIds.length === paginatedProducts.length}
+                      ref={(el) => {
+                        if (el) {
+                          el.indeterminate = selectedIds.length > 0 && selectedIds.length < paginatedProducts.length;
+                        }
+                      }}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      aria-label="Sélectionner tous les produits affichés"
+                    />
+                  </th>
+                  <th className="py-4 px-4">Modèle / Article</th>
                   <th className="py-4 px-6">Catégorie</th>
                   <th className="py-4 px-6">Prix Vente</th>
                   <th className="py-4 px-6">Quantité Stock</th>
@@ -255,86 +352,112 @@ export default function ProductsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {filteredProducts.map((prod) => (
-                  <tr key={prod.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-4 px-6">
-                      <div className="font-bold text-slate-900 text-sm">{prod.name}</div>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="font-mono text-[11px] text-slate-400">{prod.sku}</span>
-                        {prod.isFeatured && (
-                          <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">
-                            En vedette
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-slate-500 text-[11px] line-clamp-1 mt-1 max-w-sm">
-                        {prod.description}
-                      </p>
-                    </td>
+                {paginatedProducts.map((prod) => {
+                  const isSelected = selectedIds.includes(prod.id);
+                  return (
+                    <tr
+                      key={prod.id}
+                      className={`hover:bg-slate-50/80 transition-colors ${
+                        isSelected ? 'bg-blue-50/40' : ''
+                      }`}
+                    >
+                      <td className="py-4 pl-6 pr-2">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => handleToggleSelect(prod.id)}
+                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          aria-label={`Sélectionner ${prod.name}`}
+                        />
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#0B3C68] font-semibold border border-blue-100">
-                        {prod.categoryLabel}
-                      </span>
-                    </td>
-
-                    <td className="py-4 px-6 font-extrabold text-slate-900 text-sm whitespace-nowrap">
-                      {prod.price.toLocaleString('fr-BE')} €
-                    </td>
-
-                    <td className="py-4 px-6 font-bold whitespace-nowrap">
-                      <div className="flex items-center gap-3">
-                        <span className="text-slate-800">{prod.stock} unités</span>
-                        <div className="w-14 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
-                          <div
-                            className={`h-full rounded-full transition-all duration-300 ${
-                              prod.stock === 0
-                                ? 'bg-rose-500 w-0'
-                                : prod.stock <= 2
-                                ? 'bg-amber-500 w-1/3'
-                                : 'bg-emerald-500 w-full'
-                            }`}
-                          />
+                      <td className="py-4 px-4">
+                        <div className="font-bold text-slate-900 text-sm">{prod.name}</div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="font-mono text-[11px] text-slate-400">{prod.sku}</span>
+                          {prod.isFeatured && (
+                            <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">
+                              En vedette
+                            </span>
+                          )}
                         </div>
-                      </div>
-                    </td>
+                        <p className="text-slate-500 text-[11px] line-clamp-1 mt-1 max-w-sm">
+                          {prod.description}
+                        </p>
+                      </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
-                      {prod.status === 'in_stock' && (
-                        <Badge variant="success">En stock</Badge>
-                      )}
-                      {prod.status === 'low_stock' && (
-                        <Badge variant="warning">Stock faible (≤ 2)</Badge>
-                      )}
-                      {prod.status === 'out_of_stock' && (
-                        <Badge variant="error">Épuisé</Badge>
-                      )}
-                    </td>
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <span className="px-2.5 py-1 rounded-lg bg-blue-50 text-[#0B3C68] font-semibold border border-blue-100">
+                          {prod.categoryLabel}
+                        </span>
+                      </td>
 
-                    <td className="py-4 px-6 text-right whitespace-nowrap">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          onClick={() => handleOpenEdit(prod)}
-                          className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(prod.id, prod.name)}
-                          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      <td className="py-4 px-6 font-extrabold text-slate-900 text-sm whitespace-nowrap">
+                        {prod.price.toLocaleString('fr-BE')} €
+                      </td>
+
+                      <td className="py-4 px-6 font-bold whitespace-nowrap">
+                        <div className="flex items-center gap-3">
+                          <span className="text-slate-800">{prod.stock} unités</span>
+                          <div className="w-14 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
+                            <div
+                              className={`h-full rounded-full transition-all duration-300 ${
+                                prod.stock === 0
+                                  ? 'bg-rose-500 w-0'
+                                  : prod.stock <= 2
+                                  ? 'bg-amber-500 w-1/3'
+                                  : 'bg-emerald-500 w-full'
+                              }`}
+                            />
+                          </div>
+                        </div>
+                      </td>
+
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        {prod.status === 'in_stock' && (
+                          <Badge variant="success">En stock</Badge>
+                        )}
+                        {prod.status === 'low_stock' && (
+                          <Badge variant="warning">Stock faible (≤ 2)</Badge>
+                        )}
+                        {prod.status === 'out_of_stock' && (
+                          <Badge variant="error">Épuisé</Badge>
+                        )}
+                      </td>
+
+                      <td className="py-4 px-6 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() => handleOpenEdit(prod)}
+                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit2 className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(prod.id, prod.name)}
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         )}
+
+        <Pagination
+          currentPage={currentPage}
+          totalItems={totalItems}
+          itemsPerPage={itemsPerPage}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={setItemsPerPage}
+        />
       </div>
 
       {/* Add / Edit Product Modal */}
