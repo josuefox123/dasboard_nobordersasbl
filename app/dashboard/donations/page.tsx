@@ -12,7 +12,6 @@ import {
   Send,
   Building,
   User,
-  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Donation } from '@/types/dashboard';
@@ -99,13 +98,6 @@ export default function DonationsPage() {
           <p className="text-xs sm:text-sm text-slate-500">
             Gestion des dons déductibles (dès 40 € en Belgique) pour les actions d’inclusion No Borders ASBL.
           </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold px-3.5 py-1.5 rounded-2xl bg-amber-50 text-amber-900 border border-amber-200/80 flex items-center gap-1.5 shadow-xs">
-            <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-            <span>Agrément Fiscal Belge</span>
-          </span>
         </div>
       </div>
 
