@@ -13,12 +13,16 @@ import {
   ShieldCheck,
   Settings,
   X,
+  ChevronLeft,
+  ChevronRight,
   LucideIcon,
 } from 'lucide-react';
 
 interface SidebarProps {
   isOpen: boolean;
   onCloseMobile: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 interface NavItem {
@@ -41,7 +45,12 @@ const bottomNav: NavItem[] = [
   { name: 'Paramètres', href: '/dashboard/settings', icon: Settings },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onCloseMobile }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  isOpen,
+  onCloseMobile,
+  isCollapsed = false,
+  onToggleCollapse,
+}) => {
   const pathname = usePathname();
 
   useEffect(() => {
@@ -76,6 +85,30 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onCloseMobile }) => {
     );
   };
 
+  const renderCollapsedLink = (item: NavItem) => {
+    const active = isActive(item.href);
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.href}
+        href={item.href}
+        onClick={onCloseMobile}
+        aria-current={active ? 'page' : undefined}
+        title={item.name}
+        className={`relative group flex items-center justify-center w-11 h-11 mx-auto rounded-2xl transition-all ${
+          active
+            ? 'bg-[#F4F6FB] text-[#0B3C68] shadow-md shadow-blue-950/20'
+            : 'text-blue-100/80 hover:text-white hover:bg-white/10'
+        }`}
+      >
+        <Icon className={`w-5 h-5 ${active ? 'text-amber-500' : ''}`} />
+        <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl border border-slate-700">
+          {item.name}
+        </span>
+      </Link>
+    );
+  };
+
   return (
     <>
       {isOpen && (
@@ -86,44 +119,94 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onCloseMobile }) => {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 transition-transform duration-300 lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed inset-y-0 left-0 z-50 flex transition-all duration-300 ease-in-out ${
+          isCollapsed ? 'lg:w-20' : 'lg:w-72'
+        } ${
+          isOpen ? 'w-72 translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        {/* Bande latérale */}
-        <div className="w-16 bg-[#072542] flex flex-col items-center py-6 gap-8">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-300 text-[#072542] font-black text-sm flex items-center justify-center shadow-lg shadow-amber-500/30">
-            NB
-          </div>
-          <span className="text-white font-extrabold tracking-[0.3em] text-sm [writing-mode:vertical-rl] rotate-180">
-            NO BORDERS
-          </span>
-        </div>
-
-        {/* Panneau principal */}
-        <div className="relative flex-1 flex flex-col bg-gradient-to-b from-[#0B3C68] via-[#0F4C8A] to-[#1D4ED8] rounded-r-[2.5rem] overflow-hidden py-8">
-          <div className="pointer-events-none absolute -left-10 bottom-24 w-40 h-40 rounded-full bg-white/5" />
-          <div className="pointer-events-none absolute right-6 bottom-16 w-10 h-10 rounded-full bg-white/10" />
-
-          <div className="px-6 flex items-center justify-between">
-            <div className="px-3 py-1.5 rounded-full bg-white/10 text-[11px] font-bold uppercase tracking-wider text-white">
-              No Borders ASBL
+        {/* Mode Réduit Desktop */}
+        {isCollapsed && (
+          <div className="hidden lg:flex flex-col w-20 bg-gradient-to-b from-[#072542] via-[#0B3C68] to-[#1D4ED8] rounded-r-3xl overflow-visible py-6 items-center shadow-xl">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-300 text-[#072542] font-black text-sm flex items-center justify-center shadow-lg shadow-amber-500/30">
+              NB
             </div>
-            <button
-              type="button"
-              onClick={onCloseMobile}
-              className="lg:hidden p-1.5 rounded-full bg-white/10 text-white"
-              aria-label="Fermer le menu"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            {onToggleCollapse && (
+              <button
+                type="button"
+                onClick={onToggleCollapse}
+                className="mt-3 p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                title="Agrandir le menu"
+                aria-label="Agrandir le menu"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            )}
+
+            <nav className="mt-8 flex-1 w-full space-y-2 px-2.5">
+              {mainNav.map(renderCollapsedLink)}
+            </nav>
+
+            <nav className="w-full space-y-2 px-2.5 mt-auto">
+              {bottomNav.map(renderCollapsedLink)}
+            </nav>
+          </div>
+        )}
+
+        {/* Mode Complet (Mobile ou Desktop non-réduit) */}
+        <div
+          className={`flex w-72 h-full ${
+            isCollapsed ? 'lg:hidden' : 'flex'
+          }`}
+        >
+          {/* Bande latérale */}
+          <div className="w-16 bg-[#072542] flex flex-col items-center py-6 gap-8 shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-300 text-[#072542] font-black text-sm flex items-center justify-center shadow-lg shadow-amber-500/30">
+              NB
+            </div>
+            <span className="text-white font-extrabold tracking-[0.3em] text-sm [writing-mode:vertical-rl] rotate-180">
+              NO BORDERS
+            </span>
           </div>
 
-          <nav className="relative mt-12 flex-1 pl-5 space-y-1">
-            {mainNav.map(renderLink)}
-          </nav>
+          {/* Panneau principal */}
+          <div className="relative flex-1 flex flex-col bg-gradient-to-b from-[#0B3C68] via-[#0F4C8A] to-[#1D4ED8] rounded-r-[2.5rem] overflow-hidden py-8">
+            <div className="pointer-events-none absolute -left-10 bottom-24 w-40 h-40 rounded-full bg-white/5" />
+            <div className="pointer-events-none absolute right-6 bottom-16 w-10 h-10 rounded-full bg-white/10" />
 
-          <nav className="relative pl-5 space-y-1">{bottomNav.map(renderLink)}</nav>
+            <div className="px-6 flex items-center justify-between">
+              <div className="px-3 py-1.5 rounded-full bg-white/10 text-[11px] font-bold uppercase tracking-wider text-white">
+                No Borders ASBL
+              </div>
+              <div className="flex items-center gap-1">
+                {onToggleCollapse && (
+                  <button
+                    type="button"
+                    onClick={onToggleCollapse}
+                    className="hidden lg:flex p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
+                    title="Réduire le menu"
+                    aria-label="Réduire le menu"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={onCloseMobile}
+                  className="lg:hidden p-1.5 rounded-full bg-white/10 text-white"
+                  aria-label="Fermer le menu"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <nav className="relative mt-12 flex-1 pl-5 space-y-1">
+              {mainNav.map(renderLink)}
+            </nav>
+
+            <nav className="relative pl-5 space-y-1">{bottomNav.map(renderLink)}</nav>
+          </div>
         </div>
       </aside>
     </>

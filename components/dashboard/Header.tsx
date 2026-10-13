@@ -3,11 +3,13 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Menu, Search, Bell, AlertTriangle, FileCheck2, X } from 'lucide-react';
+import { Menu, Search, Bell, AlertTriangle, FileCheck2, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
 interface AlertItem {
@@ -26,7 +28,7 @@ const scopes = [
   { value: '/dashboard/contents', label: 'Contenus' },
 ];
 
-export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
+export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = false, onToggleCollapse }) => {
   const router = useRouter();
   const [scope, setScope] = useState(scopes[0].value);
   const [query, setQuery] = useState('');
@@ -106,6 +108,18 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
         >
           <Menu className="w-5 h-5" />
         </button>
+
+        {onToggleCollapse && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            className="hidden lg:flex p-2.5 rounded-full bg-white text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            title={isCollapsed ? 'Agrandir le menu latéral' : 'Réduire le menu latéral'}
+            aria-label={isCollapsed ? 'Agrandir le menu latéral' : 'Réduire le menu latéral'}
+          >
+            {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
+        )}
 
         <form
           onSubmit={handleSearch}
