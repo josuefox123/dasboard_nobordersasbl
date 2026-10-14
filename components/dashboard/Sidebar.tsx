@@ -167,80 +167,56 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Mode Complet (Mobile ou Desktop non-réduit) */}
         <div
-          className={`flex w-72 h-full ${
+          className={`flex-col w-72 h-full bg-gradient-to-b from-[#072542] via-[#0B3C68] to-[#1D4ED8] rounded-r-3xl overflow-hidden py-6 shadow-xl ${
             isCollapsed ? 'lg:hidden' : 'flex'
           }`}
         >
-          {/* Bande latérale */}
-          <div className="w-16 bg-[#072542] flex flex-col items-center py-6 gap-8 shrink-0">
+          {/* Header avec un seul logo sur fond blanc */}
+          <div className="px-5 flex items-center justify-between gap-3">
             <Link
               href="/dashboard"
-              className="w-12 h-12 rounded-2xl bg-white p-1.5 flex items-center justify-center shadow-md shadow-black/20 group transition-transform hover:scale-105"
+              className="flex-1 bg-white rounded-2xl px-4 py-2.5 shadow-md shadow-blue-950/25 hover:shadow-lg transition-all flex items-center justify-center group"
               title="No Borders ASBL"
             >
               <Image
                 src="/logoFichier 2logo_2.png"
                 alt="No Borders ASBL"
-                width={48}
-                height={48}
-                className="w-full h-auto object-contain"
+                width={200}
+                height={66}
+                className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
                 priority
               />
             </Link>
-            <span className="text-white font-extrabold tracking-[0.3em] text-sm [writing-mode:vertical-rl] rotate-180">
-              NO BORDERS
-            </span>
-          </div>
-
-          {/* Panneau principal */}
-          <div className="relative flex-1 flex flex-col bg-gradient-to-b from-[#0B3C68] via-[#0F4C8A] to-[#1D4ED8] rounded-r-[2.5rem] overflow-hidden py-8">
-            <div className="pointer-events-none absolute -left-10 bottom-24 w-40 h-40 rounded-full bg-white/5" />
-            <div className="pointer-events-none absolute right-6 bottom-16 w-10 h-10 rounded-full bg-white/10" />
-
-            <div className="px-5 flex items-center justify-between gap-2">
-              <Link
-                href="/dashboard"
-                className="flex-1 bg-white rounded-2xl px-3.5 py-2 shadow-md shadow-blue-950/25 hover:shadow-lg transition-all flex items-center justify-center group"
-                title="No Borders ASBL"
-              >
-                <Image
-                  src="/logoFichier 2logo_2.png"
-                  alt="No Borders ASBL"
-                  width={200}
-                  height={66}
-                  className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
-                  priority
-                />
-              </Link>
-              <div className="flex items-center gap-1">
-                {onToggleCollapse && (
-                  <button
-                    type="button"
-                    onClick={onToggleCollapse}
-                    className="hidden lg:flex p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors"
-                    title="Réduire le menu"
-                    aria-label="Réduire le menu"
-                  >
-                    <ChevronLeft className="w-4 h-4" />
-                  </button>
-                )}
+            <div className="flex items-center gap-1 shrink-0">
+              {onToggleCollapse && (
                 <button
                   type="button"
-                  onClick={onCloseMobile}
-                  className="lg:hidden p-1.5 rounded-full bg-white/10 text-white"
-                  aria-label="Fermer le menu"
+                  onClick={onToggleCollapse}
+                  className="hidden lg:flex p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  title="Réduire le menu"
+                  aria-label="Réduire le menu"
                 >
-                  <X className="w-4 h-4" />
+                  <ChevronLeft className="w-4 h-4" />
                 </button>
-              </div>
+              )}
+              <button
+                type="button"
+                onClick={onCloseMobile}
+                className="lg:hidden p-2 rounded-xl bg-white/10 text-white"
+                aria-label="Fermer le menu"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
-
-            <nav className="relative mt-12 flex-1 pl-5 space-y-1">
-              {mainNav.map(renderLink)}
-            </nav>
-
-            <nav className="relative pl-5 space-y-1">{bottomNav.map(renderLink)}</nav>
           </div>
+
+          <nav className="mt-8 flex-1 pl-4 pr-3 space-y-1">
+            {mainNav.map(renderLink)}
+          </nav>
+
+          <nav className="pl-4 pr-3 space-y-1 mt-auto">
+            {bottomNav.map(renderLink)}
+          </nav>
         </div>
       </aside>
     </>
