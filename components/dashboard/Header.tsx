@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Menu, Search, Bell, AlertTriangle, FileCheck2, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
@@ -120,6 +121,21 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
             {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
           </button>
         )}
+
+        <Link
+          href="/dashboard"
+          className={`items-center shrink-0 pr-1 ${isCollapsed ? 'flex' : 'flex lg:hidden'}`}
+          title="No Borders ASBL"
+        >
+          <Image
+            src="/logoFichier 2logo_2.png"
+            alt="No Borders ASBL"
+            width={120}
+            height={40}
+            className="h-7 sm:h-8 w-auto object-contain"
+            priority
+          />
+        </Link>
 
         <form
           onSubmit={handleSearch}

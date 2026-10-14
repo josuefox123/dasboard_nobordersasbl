@@ -2,6 +2,7 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -128,9 +129,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Mode Réduit Desktop */}
         {isCollapsed && (
           <div className="hidden lg:flex flex-col w-20 bg-gradient-to-b from-[#072542] via-[#0B3C68] to-[#1D4ED8] rounded-r-3xl overflow-visible py-6 items-center shadow-xl">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-300 text-[#072542] font-black text-sm flex items-center justify-center shadow-lg shadow-amber-500/30">
-              NB
-            </div>
+            <Link
+              href="/dashboard"
+              className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center p-2 transition-all shadow-md group"
+              title="No Borders ASBL"
+            >
+              <Image
+                src="/logoFichier 3logo_2_blanc.png"
+                alt="No Borders ASBL"
+                width={48}
+                height={16}
+                className="w-full h-auto object-contain transition-transform group-hover:scale-105"
+                priority
+              />
+            </Link>
             {onToggleCollapse && (
               <button
                 type="button"
@@ -161,9 +173,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           {/* Bande latérale */}
           <div className="w-16 bg-[#072542] flex flex-col items-center py-6 gap-8 shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-yellow-300 text-[#072542] font-black text-sm flex items-center justify-center shadow-lg shadow-amber-500/30">
-              NB
-            </div>
+            <Link
+              href="/dashboard"
+              className="w-12 h-12 rounded-2xl bg-white/10 hover:bg-white/20 flex items-center justify-center p-2 transition-all shadow-md group"
+              title="No Borders ASBL"
+            >
+              <Image
+                src="/logoFichier 3logo_2_blanc.png"
+                alt="No Borders ASBL"
+                width={44}
+                height={15}
+                className="w-full h-auto object-contain transition-transform group-hover:scale-105"
+                priority
+              />
+            </Link>
             <span className="text-white font-extrabold tracking-[0.3em] text-sm [writing-mode:vertical-rl] rotate-180">
               NO BORDERS
             </span>
@@ -175,9 +198,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="pointer-events-none absolute right-6 bottom-16 w-10 h-10 rounded-full bg-white/10" />
 
             <div className="px-6 flex items-center justify-between">
-              <div className="px-3 py-1.5 rounded-full bg-white/10 text-[11px] font-bold uppercase tracking-wider text-white">
-                No Borders ASBL
-              </div>
+              <Link href="/dashboard" className="block max-w-[145px] hover:opacity-90 transition-opacity">
+                <Image
+                  src="/logoFichier 3logo_2_blanc.png"
+                  alt="No Borders ASBL"
+                  width={145}
+                  height={48}
+                  className="h-8 w-auto object-contain"
+                  priority
+                />
+              </Link>
               <div className="flex items-center gap-1">
                 {onToggleCollapse && (
                   <button
