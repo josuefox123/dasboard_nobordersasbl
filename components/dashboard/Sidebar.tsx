@@ -131,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="hidden lg:flex flex-col w-20 bg-gradient-to-b from-[#072542] via-[#0B3C68] to-[#1D4ED8] rounded-r-3xl overflow-visible py-6 items-center shadow-xl">
             <Link
               href="/dashboard"
-              className="w-14 h-14 rounded-2xl bg-white p-2 flex items-center justify-center shadow-lg shadow-blue-950/25 group transition-transform hover:scale-105"
+              className="w-14 h-14 rounded-2xl bg-white p-2 flex items-center justify-center logo-card-animated group"
               title="No Borders ASBL"
             >
               <Image
@@ -139,7 +139,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 alt="No Borders ASBL"
                 width={56}
                 height={56}
-                className="w-full h-auto object-contain"
+                className="w-full h-auto object-contain logo-img-animated"
                 priority
               />
             </Link>
@@ -175,7 +175,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="px-5 flex items-center justify-between gap-3">
             <Link
               href="/dashboard"
-              className="flex-1 bg-white rounded-2xl px-4 py-2.5 shadow-md shadow-blue-950/25 hover:shadow-lg transition-all flex items-center justify-center group"
+              className="flex-1 bg-white rounded-2xl px-4 py-2.5 logo-card-animated flex items-center justify-center group"
               title="No Borders ASBL"
             >
               <Image
@@ -183,7 +183,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 alt="No Borders ASBL"
                 width={200}
                 height={66}
-                className="h-10 w-auto object-contain transition-transform group-hover:scale-105"
+                className="h-10 w-auto object-contain logo-img-animated"
                 priority
               />
             </Link>
