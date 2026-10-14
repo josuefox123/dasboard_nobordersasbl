@@ -13,55 +13,66 @@ export const OrderStatus: React.FC<{ orders: Order[] }> = ({ orders }) => {
   const c = 2 * Math.PI * r;
 
   return (
-    <div className="panel h-full flex flex-col">
-      <h3 className="text-xl font-bold text-slate-900">Statut des commandes</h3>
+    <div className="panel h-full flex flex-col justify-between">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-lg font-bold text-slate-900">Statut des commandes</h3>
+        <span className="text-xs font-semibold text-slate-400">{orders.length} total</span>
+      </div>
 
-      <div className="flex-1 flex items-center justify-center py-6">
-        <svg viewBox="0 0 180 180" className="w-48 h-48">
+      <div className="flex-1 flex items-center justify-center py-4">
+        <svg viewBox="0 0 180 180" className="w-44 h-44">
           <defs>
-            <linearGradient id="trackGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#FDE68A" />
-              <stop offset="100%" stopColor="#BFDBFE" />
-            </linearGradient>
-            <linearGradient id="arcGrad" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#0B3C68" />
-              <stop offset="100%" stopColor="#38BDF8" />
+            <linearGradient id="orderArcGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor="#10B981" />
+              <stop offset="100%" stopColor="#059669" />
             </linearGradient>
           </defs>
-          <circle cx={90} cy={90} r={r} fill="none" stroke="url(#trackGrad)" strokeWidth={10} />
+          {/* Background track */}
+          <circle cx={90} cy={90} r={r} fill="none" stroke="#F1F5F9" strokeWidth={12} />
+          {/* Active arc */}
           <circle
             cx={90}
             cy={90}
             r={r}
             fill="none"
-            stroke="url(#arcGrad)"
-            strokeWidth={18}
+            stroke="url(#orderArcGrad)"
+            strokeWidth={14}
             strokeLinecap="round"
             strokeDasharray={`${(c * pct) / 100} ${c}`}
             transform="rotate(-90 90 90)"
+            className="transition-all duration-700 ease-out"
           />
-          <text x={90} y={92} textAnchor="middle" fontSize={30} fontWeight={800} fill="#0B3C68">
+          <text x={90} y={88} textAnchor="middle" fontSize={30} fontWeight={800} fill="#0F172A">
             {pct}
-            <tspan fontSize={14}>%</tspan>
+            <tspan fontSize={16} fontWeight={700} fill="#10B981">%</tspan>
           </text>
-          <text x={90} y={112} textAnchor="middle" fontSize={9} letterSpacing={2} fill="#94A3B8">
+          <text x={90} y={110} textAnchor="middle" fontSize={10} fontWeight={700} letterSpacing={1.5} fill="#94A3B8">
             LIVRÉES
           </text>
         </svg>
       </div>
 
-      <div className="grid grid-cols-3 divide-x divide-slate-100 text-center">
-        <div>
-          <p className="text-xl font-bold text-slate-900">{delivered}</p>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Livrées</p>
+      <div className="grid grid-cols-3 gap-2 pt-3 border-t border-slate-100 text-center">
+        <div className="p-2 rounded-xl bg-slate-50">
+          <div className="flex items-center justify-center gap-1.5 mb-0.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <p className="text-base font-bold text-slate-900">{delivered}</p>
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Livrées</p>
         </div>
-        <div>
-          <p className="text-xl font-bold text-slate-900">{inProgress}</p>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">En cours</p>
+        <div className="p-2 rounded-xl bg-slate-50">
+          <div className="flex items-center justify-center gap-1.5 mb-0.5">
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <p className="text-base font-bold text-slate-900">{inProgress}</p>
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">En cours</p>
         </div>
-        <div>
-          <p className="text-xl font-bold text-slate-900">{refunded}</p>
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Remboursées</p>
+        <div className="p-2 rounded-xl bg-slate-50">
+          <div className="flex items-center justify-center gap-1.5 mb-0.5">
+            <span className="w-2 h-2 rounded-full bg-rose-500" />
+            <p className="text-base font-bold text-slate-900">{refunded}</p>
+          </div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Remboursées</p>
         </div>
       </div>
     </div>

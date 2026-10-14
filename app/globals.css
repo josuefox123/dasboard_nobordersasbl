@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,59 +6,77 @@
 
 @layer base {
   *, ::before, ::after {
-    font-family: 'Plus Jakarta Sans', var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   }
 
   html, body {
-    background-color: #F4F6FB;
+    background-color: #F7F8FA;
     color: #0F172A;
-    font-family: 'Plus Jakarta Sans', var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     letter-spacing: -0.015em;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Plus Jakarta Sans', var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     letter-spacing: -0.03em;
     font-weight: 800;
   }
 }
 
 @layer components {
+  /* Panel / Card de base */
   .panel {
-    @apply bg-white rounded-3xl p-6 sm:p-7 border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)];
+    @apply bg-white rounded-2xl p-6 sm:p-7 border border-slate-100 shadow-sm;
   }
 
-  /* Form control stylings */
+  /* Form controls */
   .input-premium {
-    @apply w-full px-4 py-2.5 text-sm bg-slate-50/80 border border-slate-200 rounded-2xl text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B3C68]/20 focus:border-[#0B3C68] transition-all duration-150;
+    @apply w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]/25 focus:border-[#16A34A] transition-all duration-150;
   }
 
   .label-premium {
-    @apply block text-xs font-bold uppercase tracking-wider text-slate-600 mb-1.5;
+    @apply block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5;
   }
 
+  /* Boutons */
   .btn-primary-gradient {
-    @apply px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-white bg-gradient-to-r from-[#0B3C68] to-[#1D4ED8] hover:from-[#092C4C] hover:to-[#1E40AF] rounded-2xl shadow-md shadow-blue-900/20 hover:shadow-lg transition-all active:scale-[0.98];
+    @apply px-5 py-2.5 text-sm font-semibold text-white bg-[#0B3C68] hover:bg-[#092C4C] rounded-xl shadow-sm transition-all active:scale-[0.98];
   }
 
   .btn-secondary-soft {
-    @apply px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-2xl transition-all;
+    @apply px-4 py-2.5 text-sm font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all;
   }
+
   .card-hover {
-    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-[0_20px_45px_-18px_rgba(11,60,104,0.18)];
+    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md;
+  }
+
+  /* Badge statuts */
+  .badge-emerald {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700;
+  }
+  .badge-amber {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700;
+  }
+  .badge-rose {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700;
+  }
+  .badge-blue {
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700;
   }
 }
 
+/* ─── Animations ─── */
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes modal-pop {
   from { opacity: 0; transform: scale(0.96) translateY(8px); }
-  to { opacity: 1; transform: scale(1) translateY(0); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .animate-fade-in {
@@ -69,109 +87,39 @@
   animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Animation Vélo qui file en bas & Apparition du Logo */
+/* ─── Animation Vélo + Logo ─── */
 @keyframes bike-bottom-runner {
-  0% {
-    transform: translateX(-120%) translateY(0);
-    opacity: 0;
-  }
-  6% {
-    opacity: 1;
-  }
-  16% {
-    transform: translateX(-15%) translateY(-1px);
-  }
-  28% {
-    transform: translateX(45%) translateY(1px);
-  }
-  40% {
-    transform: translateX(110%) translateY(-1px);
-  }
-  50% {
-    transform: translateX(170%) translateY(0);
-    opacity: 1;
-  }
-  56% {
-    transform: translateX(210%);
-    opacity: 0;
-  }
-  60%, 100% {
-    transform: translateX(220%);
-    opacity: 0;
-  }
+  0%   { transform: translateX(-120%) translateY(0); opacity: 0; }
+  6%   { opacity: 1; }
+  16%  { transform: translateX(-15%) translateY(-1px); }
+  28%  { transform: translateX(45%) translateY(1px); }
+  40%  { transform: translateX(110%) translateY(-1px); }
+  50%  { transform: translateX(170%) translateY(0); opacity: 1; }
+  56%  { transform: translateX(210%); opacity: 0; }
+  60%, 100% { transform: translateX(220%); opacity: 0; }
 }
 
 @keyframes bike-bottom-runner-collapsed {
-  0% {
-    transform: translateX(-120%);
-    opacity: 0;
-  }
-  6% {
-    opacity: 1;
-  }
-  48% {
-    transform: translateX(140%);
-    opacity: 1;
-  }
-  56% {
-    transform: translateX(180%);
-    opacity: 0;
-  }
-  60%, 100% {
-    transform: translateX(180%);
-    opacity: 0;
-  }
+  0%   { transform: translateX(-120%); opacity: 0; }
+  6%   { opacity: 1; }
+  48%  { transform: translateX(140%); opacity: 1; }
+  56%  { transform: translateX(180%); opacity: 0; }
+  60%, 100% { transform: translateX(180%); opacity: 0; }
 }
 
 @keyframes logo-reveal-bike {
-  0%, 24% {
-    opacity: 0;
-    transform: translateY(6px) scale(0.96);
-    filter: drop-shadow(0 0 0 rgba(0, 0, 0, 0));
-  }
-  32% {
-    opacity: 0.6;
-    transform: translateY(2px) scale(0.98);
-  }
-  42% {
-    opacity: 1;
-    transform: translateY(-1.5px) scale(1.02);
-    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.95))
-           drop-shadow(0 0 26px rgba(2, 132, 199, 0.85))
-           drop-shadow(0 0 8px rgba(245, 158, 11, 0.6));
-  }
-  52% {
-    opacity: 1;
-    transform: translateY(-0.5px) scale(1.005);
-    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7))
-           drop-shadow(0 0 16px rgba(2, 132, 199, 0.4));
-  }
-  62%, 88% {
-    opacity: 0.98;
-    transform: translateY(0) scale(1);
-    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
-  }
-  94% {
-    opacity: 0.5;
-    transform: translateY(1px);
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(6px) scale(0.96);
-  }
+  0%, 24%  { opacity: 0; transform: translateY(6px) scale(0.96); filter: drop-shadow(0 0 0 rgba(0,0,0,0)); }
+  32%      { opacity: 0.6; transform: translateY(2px) scale(0.98); }
+  42%      { opacity: 1; transform: translateY(-1.5px) scale(1.02); filter: drop-shadow(0 0 16px rgba(255,255,255,0.95)) drop-shadow(0 0 26px rgba(2,132,199,0.85)) drop-shadow(0 0 8px rgba(245,158,11,0.6)); }
+  52%      { opacity: 1; transform: translateY(-0.5px) scale(1.005); filter: drop-shadow(0 0 10px rgba(255,255,255,0.7)) drop-shadow(0 0 16px rgba(2,132,199,0.4)); }
+  62%, 88% { opacity: 0.98; transform: translateY(0) scale(1); filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4)); }
+  94%      { opacity: 0.5; transform: translateY(1px); }
+  100%     { opacity: 0; transform: translateY(6px) scale(0.96); }
 }
 
-.bike-bottom-runner {
-  animation: bike-bottom-runner 8s cubic-bezier(0.35, 0, 0.25, 1) infinite;
-}
-
-.bike-bottom-runner-collapsed {
-  animation: bike-bottom-runner-collapsed 8s cubic-bezier(0.35, 0, 0.25, 1) infinite;
-}
-
-.logo-reveal-bike {
-  animation: logo-reveal-bike 8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
-}
+.bike-bottom-runner           { animation: bike-bottom-runner 8s cubic-bezier(0.35, 0, 0.25, 1) infinite; }
+.bike-bottom-runner-collapsed { animation: bike-bottom-runner-collapsed 8s cubic-bezier(0.35, 0, 0.25, 1) infinite; }
+.logo-reveal-bike             { animation: logo-reveal-bike 8s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
@@ -182,16 +130,7 @@
   }
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #F1F5F9;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #CBD5E1;
-  border-radius: 4px;
-}
+/* ─── Scrollbar ─── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: #F1F5F9; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 4px; }

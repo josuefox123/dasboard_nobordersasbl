@@ -54,22 +54,33 @@ export const RevenueChart: React.FC<{ data: ChartPoint[] }> = ({ data }) => {
   );
 
   return (
-    <div className="panel h-full">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-xl font-bold text-slate-900">Revenus</h3>
-        <div className="flex items-center gap-4 text-xs font-medium">
+    <div className="panel h-full flex flex-col justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+        <div>
+          <h3 className="text-lg font-bold text-slate-900">Revenus</h3>
+          <p className="text-xs text-slate-400">Évolution des ventes et des dons</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-semibold">
           <button
             type="button"
             onClick={() => setShowSales(!showSales)}
-            className={`flex items-center gap-2 transition-opacity ${showSales ? '' : 'opacity-40'}`}
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
+              showSales
+                ? 'bg-blue-50 border-blue-200 text-[#0B3C68]'
+                : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+            }`}
           >
-            <span className="w-2 h-2 rounded-full bg-[#1D4ED8]" />
-            Ventes boutique
+            <span className="w-2 h-2 rounded-full bg-[#0B3C68]" />
+            Ventes
           </button>
           <button
             type="button"
             onClick={() => setShowDonations(!showDonations)}
-            className={`flex items-center gap-2 transition-opacity ${showDonations ? '' : 'opacity-40'}`}
+            className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
+              showDonations
+                ? 'bg-amber-50 border-amber-200 text-amber-700'
+                : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
+            }`}
           >
             <span className="w-2 h-2 rounded-full bg-amber-500" />
             Dons

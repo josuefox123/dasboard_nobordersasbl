@@ -98,12 +98,12 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-[#F4F6FB]/90 backdrop-blur-md px-4 sm:px-8 py-5 flex items-center justify-between gap-4">
+    <header className="sticky top-0 z-30 bg-[#F7F8FA]/85 backdrop-blur-md px-4 sm:px-8 py-4 flex items-center justify-between gap-4 border-b border-slate-200/50">
       <div className="flex items-center gap-3 flex-1 min-w-0">
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="lg:hidden p-2.5 rounded-full bg-white text-slate-700 shadow-sm"
+          className="lg:hidden p-2 rounded-xl bg-white text-slate-700 border border-slate-200/70 shadow-xs hover:bg-slate-50 transition-colors"
           aria-label="Ouvrir le menu"
         >
           <Menu className="w-5 h-5" />
@@ -113,18 +113,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
           <button
             type="button"
             onClick={onToggleCollapse}
-            className="hidden lg:flex p-2.5 rounded-full bg-white text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+            className="hidden lg:flex p-2 rounded-xl bg-white text-slate-600 border border-slate-200/70 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
             title={isCollapsed ? 'Agrandir le menu latéral' : 'Réduire le menu latéral'}
             aria-label={isCollapsed ? 'Agrandir le menu latéral' : 'Réduire le menu latéral'}
           >
-            {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+            {isCollapsed ? <PanelLeftOpen className="w-4.5 h-4.5" /> : <PanelLeftClose className="w-4.5 h-4.5" />}
           </button>
         )}
 
-
         <form
           onSubmit={handleSearch}
-          className="flex items-center w-full max-w-xl bg-white rounded-full shadow-[0_8px_30px_-12px_rgba(11,60,104,0.2)] pl-4 pr-2 py-1.5"
+          className="flex items-center w-full max-w-lg bg-white rounded-xl border border-slate-200/80 shadow-xs pl-3.5 pr-1.5 py-1 focus-within:border-[#0B3C68] focus-within:ring-2 focus-within:ring-[#0B3C68]/10 transition-all"
         >
           <select
             value={scope}

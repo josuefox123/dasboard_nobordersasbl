@@ -28,7 +28,7 @@ export default function DashboardLayout({
   };
 
   return (
-    <div className="min-h-screen bg-[#F4F6FB]">
+    <div className="min-h-screen bg-[#F7F8FA]">
       <Sidebar
         isOpen={sidebarOpen}
         onCloseMobile={() => setSidebarOpen(false)}

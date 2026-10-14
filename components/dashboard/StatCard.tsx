@@ -1,5 +1,5 @@
 import React from 'react';
-import { LucideIcon } from 'lucide-react';
+import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { smoothPath } from '@/lib/chart';
 
 interface StatCardProps {
@@ -13,34 +13,53 @@ interface StatCardProps {
   trend?: number[];
 }
 
-const gradients = {
-  blue: 'from-[#0B3C68] to-[#2563EB] shadow-blue-800/30',
-  purple: 'from-[#1E40AF] to-[#38BDF8] shadow-blue-500/30',
-  emerald: 'from-[#0284C7] to-[#22D3EE] shadow-sky-500/30',
-  yellow: 'from-[#F59E0B] to-[#FCD34D] shadow-amber-500/30',
+const colorConfig = {
+  blue: {
+    iconBg: 'bg-blue-50 text-[#0B3C68]',
+    stroke: '#0B3C68',
+    pill: 'bg-blue-50 text-blue-700',
+  },
+  emerald: {
+    iconBg: 'bg-emerald-50 text-emerald-600',
+    stroke: '#10B981',
+    pill: 'bg-emerald-50 text-emerald-700',
+  },
+  yellow: {
+    iconBg: 'bg-amber-50 text-amber-600',
+    stroke: '#F59E0B',
+    pill: 'bg-amber-50 text-amber-700',
+  },
+  purple: {
+    iconBg: 'bg-indigo-50 text-indigo-600',
+    stroke: '#6366F1',
+    pill: 'bg-indigo-50 text-indigo-700',
+  },
 };
 
 const DEFAULT_TREND = [4, 6, 5, 8, 6, 9, 7, 10];
 
-function Sparkline({ values }: { values: number[] }) {
+function Sparkline({ values, stroke }: { values: number[]; stroke: string }) {
   const w = 72;
-  const h = 44;
+  const h = 36;
   const max = Math.max(...values);
   const min = Math.min(...values);
   const range = max - min || 1;
   const points = values.map((v, i) => ({
     x: (i / (values.length - 1)) * w,
-    y: h - 6 - ((v - min) / range) * (h - 14),
+    y: h - 4 - ((v - min) / range) * (h - 10),
   }));
   const last = points[points.length - 1];
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-[72px] h-[44px] shrink-0" aria-hidden="true">
-      {points.map((p, i) => (
-        <line key={i} x1={p.x} y1={0} x2={p.x} y2={h} stroke="white" strokeOpacity={0.15} />
-      ))}
-      <path d={smoothPath(points)} fill="none" stroke="white" strokeWidth={2.5} strokeLinecap="round" />
-      <circle cx={last.x - 2} cy={last.y} r={3} fill="white" />
+    <svg viewBox={`0 0 ${w} ${h}`} className="w-[72px] h-[36px] shrink-0" aria-hidden="true">
+      <path
+        d={smoothPath(points)}
+        fill="none"
+        stroke={stroke}
+        strokeWidth={2.5}
+        strokeLinecap="round"
+      />
+      <circle cx={last.x - 1} cy={last.y} r={3} fill={stroke} />
     </svg>
   );
 }
@@ -55,28 +74,51 @@ export const StatCard: React.FC<StatCardProps> = ({
   subtext,
   trend = DEFAULT_TREND,
 }) => {
-  return (
-    <div
-      className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${gradients[variant]} p-5 text-white shadow-xl transition-transform hover:-translate-y-0.5`}
-    >
-      <div className="pointer-events-none absolute -right-8 -top-8 w-28 h-28 rounded-full bg-white/10" />
-      <Icon className="absolute right-4 top-4 w-4 h-4 text-white/70" />
+  const config = colorConfig[variant] || colorConfig.blue;
+  const isPositive = change !== undefined ? change >= 0 : true;
 
-      <div className="relative flex items-center gap-4">
-        <Sparkline values={trend.length > 1 ? trend : DEFAULT_TREND} />
-        <div className="min-w-0">
-          <p className="text-[11px] font-semibold uppercase tracking-widest text-white/80 truncate">
-            {title}
-          </p>
-          <p className="text-2xl font-extrabold tracking-tight">{value}</p>
-          {change !== undefined && (
-            <p className="text-[11px] font-semibold text-white/90">
-              {change >= 0 ? '+' : ''}
-              {change}% {changeLabel}
-            </p>
-          )}
-          {subtext && <p className="text-[11px] text-white/80 truncate">{subtext}</p>}
-        </div>
+  return (
+    <div className="relative bg-white rounded-2xl p-5 border border-slate-100 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <p className="text-[12px] font-bold uppercase tracking-wider text-slate-500 truncate">
+          {title}
+        </p>
+        <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${config.iconBg}`}>
+          <Icon className="w-4.5 h-4.5 w-[18px] h-[18px]" />
+        </span>
+      </div>
+
+      <div className="flex items-end justify-between gap-2 mb-2">
+        <p className="text-2xl sm:text-[26px] font-extrabold text-slate-900 tracking-tight">
+          {value}
+        </p>
+        <Sparkline
+          values={trend.length > 1 ? trend : DEFAULT_TREND}
+          stroke={config.stroke}
+        />
+      </div>
+
+      <div className="flex items-center gap-2 text-xs">
+        {change !== undefined ? (
+          <>
+            <span
+              className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md ${
+                isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+              }`}
+            >
+              {isPositive ? (
+                <TrendingUp className="w-3 h-3" />
+              ) : (
+                <TrendingDown className="w-3 h-3" />
+              )}
+              {isPositive ? '+' : ''}
+              {change}%
+            </span>
+            <span className="text-slate-400 font-medium truncate">{changeLabel}</span>
+          </>
+        ) : subtext ? (
+          <span className="text-slate-500 font-medium truncate">{subtext}</span>
+        ) : null}
       </div>
     </div>
   );

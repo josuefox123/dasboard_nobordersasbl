@@ -62,13 +62,13 @@ export default function OverviewPage() {
     <div className="space-y-8 animate-fade-in">
       <h1 className="text-2xl font-bold text-slate-900">Vue d’ensemble</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 min-[1440px]:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 min-[1440px]:grid-cols-4 gap-5">
         <StatCard
-          title="Ventes"
+          title="Ventes boutique"
           value={`${metrics.totalSales.toLocaleString('fr-BE')} €`}
           change={metrics.salesGrowthPercent}
           icon={ShoppingBag}
-          variant="blue"
+          variant="emerald"
           trend={metrics.recentSalesData.map((d) => d.sales)}
         />
         <StatCard
@@ -76,17 +76,17 @@ export default function OverviewPage() {
           value={metrics.totalOrders}
           change={metrics.ordersGrowthPercent}
           icon={Package}
-          variant="purple"
+          variant="blue"
         />
         <StatCard
           title="Clients actifs"
           value={customersCount}
           icon={Users}
-          variant="emerald"
+          variant="purple"
           subtext={`${lowStock.length} produit(s) en stock faible`}
         />
         <StatCard
-          title="Dons"
+          title="Dons collectés"
           value={`${metrics.totalDonations.toLocaleString('fr-BE')} €`}
           change={metrics.donationsGrowthPercent}
           icon={HeartHandshake}
@@ -105,49 +105,58 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="panel lg:col-span-2 overflow-hidden">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-slate-900">Commandes récentes</h3>
+            <div>
+              <h3 className="text-lg font-bold text-slate-900">Commandes récentes</h3>
+              <p className="text-xs text-slate-400">Les 5 dernières commandes passées</p>
+            </div>
             <Link
               href="/dashboard/orders"
-              className="flex items-center gap-1 text-xs font-bold text-[#0B3C68] hover:text-blue-700"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3C68] hover:text-blue-700 px-3 py-1.5 rounded-lg bg-blue-50/70 hover:bg-blue-50 transition-colors"
             >
               Tout voir <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
           <div className="overflow-x-auto -mx-6">
             <table className="w-full text-left text-sm">
-              <thead className="text-[11px] uppercase tracking-wider text-slate-500">
+              <thead className="text-[11px] uppercase tracking-wider text-slate-400 bg-slate-50/60 border-y border-slate-100">
                 <tr>
-                  <th className="py-3 px-6 font-bold">Commande</th>
-                  <th className="py-3 px-6 font-bold">Client</th>
-                  <th className="py-3 px-6 font-bold">Date</th>
-                  <th className="py-3 px-6 font-bold">Montant</th>
-                  <th className="py-3 px-6 font-bold">Paiement</th>
+                  <th className="py-2.5 px-4 font-bold">Commande</th>
+                  <th className="py-2.5 px-4 font-bold">Client</th>
+                  <th className="py-2.5 px-4 font-bold">Date</th>
+                  <th className="py-2.5 px-4 font-bold">Montant</th>
+                  <th className="py-2.5 px-4 font-bold">Paiement</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {sortedOrders.slice(0, 5).map((o) => {
                   const pay = paymentLabel[o.paymentStatus];
                   return (
-                    <tr key={o.id} className="hover:bg-slate-50/70">
-                      <td className="py-3.5 px-6 whitespace-nowrap">
-                        <span className="inline-flex items-center gap-2 font-medium">
-                          <span className={`w-1.5 h-1.5 rounded-full ${pay.dot}`} />
-                          {o.orderNumber}
-                        </span>
+                    <tr key={o.id} className="hover:bg-slate-50/80 transition-colors">
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className="font-semibold text-slate-900">{o.orderNumber}</span>
                       </td>
-                      <td className="py-3.5 px-6 whitespace-nowrap">{o.customerName}</td>
-                      <td className="py-3.5 px-6 whitespace-nowrap text-slate-500">
+                      <td className="py-3 px-4 whitespace-nowrap font-medium text-slate-800">{o.customerName}</td>
+                      <td className="py-3 px-4 whitespace-nowrap text-xs text-slate-500">
                         {new Date(o.createdAt).toLocaleDateString('fr-BE', {
                           day: '2-digit',
                           month: 'short',
                           year: 'numeric',
                         })}
                       </td>
-                      <td className="py-3.5 px-6 whitespace-nowrap font-semibold">
+                      <td className="py-3 px-4 whitespace-nowrap font-bold text-slate-900">
                         {o.totalAmount.toLocaleString('fr-BE')} €
                       </td>
-                      <td className={`py-3.5 px-6 whitespace-nowrap font-medium ${pay.className}`}>
-                        {pay.text}
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                          o.paymentStatus === 'paid'
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : o.paymentStatus === 'pending'
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-rose-50 text-rose-700'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${pay.dot}`} />
+                          {pay.text}
+                        </span>
                       </td>
                     </tr>
                   );

@@ -74,14 +74,25 @@ export const Sidebar: React.FC<SidebarProps> = ({
         href={item.href}
         onClick={onCloseMobile}
         aria-current={active ? 'page' : undefined}
-        className={`flex items-center gap-3 pl-5 pr-4 py-3 rounded-l-full text-[12px] font-bold uppercase tracking-wider transition-colors ${
+        className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 ${
           active
-            ? 'bg-[#F4F6FB] text-[#0B3C68]'
-            : 'text-blue-100/80 hover:text-white hover:bg-white/10'
+            ? 'bg-[#EFF6FF] text-[#0B3C68]'
+            : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
         }`}
       >
-        <Icon className={`w-[18px] h-[18px] ${active ? 'text-amber-500' : ''}`} />
+        <span
+          className={`w-8 h-8 flex items-center justify-center rounded-lg shrink-0 transition-all ${
+            active
+              ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+              : 'bg-transparent text-slate-400'
+          }`}
+        >
+          <Icon className="w-4 h-4" />
+        </span>
         <span>{item.name}</span>
+        {active && (
+          <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" />
+        )}
       </Link>
     );
   };
@@ -96,14 +107,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={onCloseMobile}
         aria-current={active ? 'page' : undefined}
         title={item.name}
-        className={`relative group flex items-center justify-center w-11 h-11 mx-auto rounded-2xl transition-all ${
+        className={`relative group flex items-center justify-center w-10 h-10 mx-auto rounded-xl transition-all ${
           active
-            ? 'bg-[#F4F6FB] text-[#0B3C68] shadow-md shadow-blue-950/20'
-            : 'text-blue-100/80 hover:text-white hover:bg-white/10'
+            ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+            : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
         }`}
       >
-        <Icon className={`w-5 h-5 ${active ? 'text-amber-500' : ''}`} />
-        <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-xl opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl border border-slate-700">
+        <Icon className="w-4.5 h-4.5 w-[18px] h-[18px]" />
+        <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl">
           {item.name}
         </span>
       </Link>
@@ -114,66 +125,66 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-slate-950/50 lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/30 backdrop-blur-sm lg:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
         className={`fixed inset-y-0 left-0 z-50 flex transition-all duration-300 ease-in-out ${
-          isCollapsed ? 'lg:w-20' : 'lg:w-72'
+          isCollapsed ? 'lg:w-[70px]' : 'lg:w-64'
         } ${
-          isOpen ? 'w-72 translate-x-0' : '-translate-x-full lg:translate-x-0'
+          isOpen ? 'w-64 translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Mode Réduit Desktop */}
         {isCollapsed && (
-          <div className="hidden lg:flex flex-col w-20 bg-gradient-to-b from-[#072542] via-[#0B3C68] to-[#1D4ED8] rounded-r-3xl overflow-visible py-6 items-center shadow-xl">
+          <div className="hidden lg:flex flex-col w-[70px] bg-white border-r border-slate-100 py-5 items-center gap-4 shadow-sm">
+            {/* Logo */}
             <Link
               href="/dashboard"
-              className="relative w-16 flex flex-col items-center justify-center group overflow-hidden py-1 rounded-xl"
+              className="relative w-10 flex flex-col items-center justify-center group overflow-hidden py-1 rounded-xl"
               title="No Borders ASBL"
             >
-              {/* Logo blanc au-dessus */}
               <div className="relative">
                 <Image
                   src="/logoFichier 3logo_2_blanc.png"
                   alt="No Borders ASBL"
-                  width={56}
-                  height={56}
-                  className="w-12 h-auto object-contain logo-reveal-bike relative z-10 transition-transform group-hover:scale-105"
+                  width={40}
+                  height={40}
+                  className="w-9 h-auto object-contain logo-reveal-bike relative z-10 transition-transform group-hover:scale-105"
                   priority
+                  style={{ filter: 'invert(1) sepia(1) saturate(0) brightness(0.3)' }}
                 />
               </div>
-
-              {/* Ligne et vélo qui file tout juste en bas du logo */}
-              <div className="relative w-12 h-3.5 overflow-hidden pointer-events-none flex items-center mt-0.5">
-                <div className="absolute inset-x-0 bottom-1 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+              <div className="relative w-9 h-3 overflow-hidden pointer-events-none flex items-center mt-0.5">
+                <div className="absolute inset-x-0 bottom-1 h-[1px] bg-gradient-to-r from-transparent via-slate-300/60 to-transparent" />
                 <div className="bike-bottom-runner-collapsed flex items-center absolute bottom-0">
-                  <div className="h-[1.5px] w-6 bg-gradient-to-r from-transparent via-cyan-400 to-amber-300 opacity-90" />
-                  <div className="text-amber-300 drop-shadow-[0_0_6px_rgba(245,158,11,1)] -ml-0.5">
-                    <Bike className="w-3 h-3" />
+                  <div className="h-[1.5px] w-5 bg-gradient-to-r from-transparent via-[#0B3C68] to-amber-400 opacity-80" />
+                  <div className="text-amber-400 -ml-0.5">
+                    <Bike className="w-2.5 h-2.5" />
                   </div>
                 </div>
               </div>
             </Link>
+
             {onToggleCollapse && (
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="mt-3 p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors"
                 title="Agrandir le menu"
                 aria-label="Agrandir le menu"
               >
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-3.5 h-3.5" />
               </button>
             )}
 
-            <nav className="mt-8 flex-1 w-full space-y-2 px-2.5">
+            <nav className="flex-1 w-full flex flex-col gap-1 px-2">
               {mainNav.map(renderCollapsedLink)}
             </nav>
 
-            <nav className="w-full space-y-2 px-2.5 mt-auto">
+            <nav className="w-full flex flex-col gap-1 px-2">
               {bottomNav.map(renderCollapsedLink)}
             </nav>
           </div>
@@ -181,36 +192,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Mode Complet (Mobile ou Desktop non-réduit) */}
         <div
-          className={`flex-col w-72 h-full bg-gradient-to-b from-[#072542] via-[#0B3C68] to-[#1D4ED8] rounded-r-3xl overflow-hidden py-6 shadow-xl ${
+          className={`flex-col w-64 h-full bg-white border-r border-slate-100 py-5 shadow-sm ${
             isCollapsed ? 'lg:hidden' : 'flex'
           }`}
         >
-          {/* Header avec logo blanc et vélo qui file tout juste en bas */}
-          <div className="px-5 flex items-center justify-between gap-2">
+          {/* Header avec logo */}
+          <div className="px-4 flex items-center justify-between gap-2 mb-6">
             <Link
               href="/dashboard"
               className="relative flex-1 flex flex-col items-start justify-center group overflow-hidden py-0.5"
               title="No Borders ASBL"
             >
-              {/* Logo blanc au-dessus */}
               <div className="relative">
                 <Image
-                  src="/logoFichier 3logo_2_blanc.png"
+                  src="/logoFichier 2logo_2.png"
                   alt="No Borders ASBL"
-                  width={190}
-                  height={63}
-                  className="h-10 sm:h-11 w-auto object-contain logo-reveal-bike relative z-10 transition-transform group-hover:scale-105"
+                  width={160}
+                  height={54}
+                  className="h-9 w-auto object-contain relative z-10 transition-transform group-hover:scale-[1.02]"
                   priority
                 />
               </div>
-
-              {/* Ligne et vélo qui file tout juste en bas du logo */}
-              <div className="relative w-full max-w-[190px] h-4 overflow-hidden pointer-events-none flex items-center mt-1">
-                <div className="absolute inset-x-0 bottom-1.5 h-[1px] bg-gradient-to-r from-transparent via-cyan-400/40 to-transparent" />
+              <div className="relative w-full max-w-[160px] h-3.5 overflow-hidden pointer-events-none flex items-center mt-0.5">
+                <div className="absolute inset-x-0 bottom-1.5 h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
                 <div className="bike-bottom-runner flex items-center absolute bottom-0.5">
-                  <div className="h-[2px] w-14 bg-gradient-to-r from-transparent via-cyan-400 to-amber-300 opacity-90 drop-shadow-[0_0_6px_rgba(2,132,199,0.9)]" />
-                  <div className="text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,1)] -ml-1">
-                    <Bike className="w-3.5 h-3.5" />
+                  <div className="h-[1.5px] w-12 bg-gradient-to-r from-transparent via-[#0B3C68] to-amber-400 opacity-80" />
+                  <div className="text-amber-400 -ml-1">
+                    <Bike className="w-3 h-3" />
                   </div>
                 </div>
               </div>
@@ -220,7 +228,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <button
                   type="button"
                   onClick={onToggleCollapse}
-                  className="hidden lg:flex p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-colors"
+                  className="hidden lg:flex p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-700 transition-colors"
                   title="Réduire le menu"
                   aria-label="Réduire le menu"
                 >
@@ -230,7 +238,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <button
                 type="button"
                 onClick={onCloseMobile}
-                className="lg:hidden p-2 rounded-xl bg-white/10 text-white"
+                className="lg:hidden p-1.5 rounded-lg bg-slate-100 text-slate-500"
                 aria-label="Fermer le menu"
               >
                 <X className="w-4 h-4" />
@@ -238,13 +246,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           </div>
 
-          <nav className="mt-8 flex-1 pl-4 pr-3 space-y-1">
+          {/* Section label */}
+          <div className="px-4 mb-2">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Menu</p>
+          </div>
+
+          <nav className="flex-1 px-3 flex flex-col gap-0.5">
             {mainNav.map(renderLink)}
           </nav>
 
-          <nav className="pl-4 pr-3 space-y-1 mt-auto">
+          <div className="px-4 my-2">
+            <div className="border-t border-slate-100" />
+          </div>
+
+          <nav className="px-3 flex flex-col gap-0.5">
             {bottomNav.map(renderLink)}
           </nav>
+
+          {/* Profil bas de sidebar */}
+          <div className="mt-4 mx-3 p-3 rounded-xl bg-slate-50 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-[#0B3C68] text-white text-xs font-bold flex items-center justify-center shrink-0">
+              JA
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-800 truncate">Josué</p>
+              <p className="text-[10px] text-slate-400 truncate">Administrateur</p>
+            </div>
+          </div>
         </div>
       </aside>
     </>
