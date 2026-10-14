@@ -131,15 +131,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="hidden lg:flex flex-col w-20 bg-gradient-to-b from-[#072542] via-[#0B3C68] to-[#1D4ED8] rounded-r-3xl overflow-visible py-6 items-center shadow-xl">
             <Link
               href="/dashboard"
-              className="w-14 h-14 rounded-2xl bg-white p-2 flex items-center justify-center logo-card-animated group"
+              className="relative w-16 h-12 flex items-center justify-center group overflow-hidden rounded-xl"
               title="No Borders ASBL"
             >
+              <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center">
+                <div className="bike-speed-runner flex items-center">
+                  <div className="h-[2px] w-12 bg-gradient-to-r from-transparent via-cyan-400 to-amber-300 opacity-90 drop-shadow-[0_0_6px_rgba(2,132,199,0.8)]" />
+                  <div className="text-amber-300 drop-shadow-[0_0_8px_rgba(245,158,11,1)] -ml-1">
+                    <Bike className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
               <Image
-                src="/logoFichier 2logo_2.png"
+                src="/logoFichier 3logo_2_blanc.png"
                 alt="No Borders ASBL"
                 width={56}
                 height={56}
-                className="w-full h-auto object-contain logo-img-animated"
+                className="w-12 h-auto object-contain logo-white-permanent relative z-10 transition-transform group-hover:scale-105"
                 priority
               />
             </Link>
@@ -171,19 +179,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
             isCollapsed ? 'lg:hidden' : 'flex'
           }`}
         >
-          {/* Header avec un seul logo sur fond blanc */}
+          {/* Header avec logo blanc sans fond et vélo qui file */}
           <div className="px-5 flex items-center justify-between gap-3">
             <Link
               href="/dashboard"
-              className="flex-1 bg-white rounded-2xl px-4 py-2.5 logo-card-animated flex items-center justify-center group"
+              className="relative flex-1 py-1 px-2 flex items-center justify-start group overflow-hidden rounded-2xl"
               title="No Borders ASBL"
             >
+              <div className="absolute inset-0 pointer-events-none overflow-hidden flex items-center">
+                <div className="bike-speed-runner flex items-center">
+                  <div className="h-[2px] w-24 bg-gradient-to-r from-transparent via-cyan-400 to-amber-300 opacity-90 drop-shadow-[0_0_8px_rgba(2,132,199,0.9)]" />
+                  <div className="p-1 rounded-full text-amber-300 drop-shadow-[0_0_10px_rgba(245,158,11,1)] -ml-2">
+                    <Bike className="w-5 h-5" />
+                  </div>
+                </div>
+              </div>
               <Image
-                src="/logoFichier 2logo_2.png"
+                src="/logoFichier 3logo_2_blanc.png"
                 alt="No Borders ASBL"
                 width={200}
                 height={66}
-                className="h-10 w-auto object-contain logo-img-animated"
+                className="h-10 sm:h-11 w-auto object-contain logo-white-permanent relative z-10 transition-transform group-hover:scale-105"
                 priority
               />
             </Link>

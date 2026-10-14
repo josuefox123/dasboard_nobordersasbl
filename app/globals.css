@@ -69,68 +69,62 @@
   animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
-/* Animations permanentes du Logo */
-@keyframes logo-float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-2px);
-  }
-}
-
-@keyframes logo-glow {
-  0%, 100% {
-    box-shadow: 0 10px 25px -8px rgba(11, 60, 104, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.6);
-  }
-  50% {
-    box-shadow: 0 14px 30px -6px rgba(11, 60, 104, 0.35), 0 0 18px rgba(245, 158, 11, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.9);
-  }
-}
-
-@keyframes logo-shimmer {
+/* Animation Vélo qui file & Logo blanc permanent */
+@keyframes bike-speed-runner {
   0% {
-    transform: translateX(-150%) skewX(-20deg);
+    transform: translateX(-150%) scale(0.9);
+    opacity: 0;
+  }
+  6% {
+    opacity: 1;
+  }
+  30% {
+    transform: translateX(330%) scale(1.05);
+    opacity: 1;
   }
   35%, 100% {
-    transform: translateX(250%) skewX(-20deg);
+    transform: translateX(360%) scale(1);
+    opacity: 0;
   }
 }
 
-@keyframes logo-subtle-scale {
-  0%, 100% {
-    transform: scale(1);
+@keyframes logo-white-glow {
+  0%, 12% {
+    opacity: 0.9;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    transform: translateY(0);
   }
-  50% {
-    transform: scale(1.02);
+  24% {
+    opacity: 1;
+    filter: drop-shadow(0 0 16px rgba(255, 255, 255, 0.95))
+           drop-shadow(0 0 28px rgba(2, 132, 199, 0.85))
+           drop-shadow(0 0 10px rgba(245, 158, 11, 0.7));
+    transform: translateY(-1.5px) scale(1.02);
+  }
+  42% {
+    opacity: 0.98;
+    filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.7))
+           drop-shadow(0 0 16px rgba(2, 132, 199, 0.4));
+    transform: translateY(-2px);
+  }
+  60% {
+    opacity: 0.95;
+    filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.5));
+    transform: translateY(-1px);
+  }
+  80%, 100% {
+    opacity: 0.9;
+    filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.4));
+    transform: translateY(0);
   }
 }
 
-.logo-card-animated {
-  position: relative;
-  overflow: hidden;
-  animation: logo-float 4s ease-in-out infinite, logo-glow 4s ease-in-out infinite;
+.bike-speed-runner {
+  animation: bike-speed-runner 6s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
 
-.logo-card-animated::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 55%;
-  height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.7) 50%,
-    transparent 100%
-  );
-  animation: logo-shimmer 3.8s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  pointer-events: none;
-}
-
-.logo-img-animated {
-  animation: logo-subtle-scale 4s ease-in-out infinite;
+.logo-white-permanent {
+  animation: logo-white-glow 6s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
