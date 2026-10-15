@@ -81,6 +81,9 @@ export interface ContentItem {
   updatedAt: string;
   publishedAt?: string;
   viewsCount: number;
+  image?: string;
+  images?: string[];
+  content?: string;
 }
 
 export type UserRole = 'super_admin' | 'manager' | 'editor' | 'treasurer';

@@ -432,6 +432,12 @@ export const initialContents: ContentItem[] = [
     updatedAt: '2025-03-05',
     publishedAt: '2025-03-01',
     viewsCount: 1420,
+    image: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80',
+    ],
+    content: 'Reportage au cœur de notre atelier bruxellois sur la fabrication artisanale des cadres en bambou.',
   },
   {
     id: 'cnt-02',
@@ -444,6 +450,11 @@ export const initialContents: ContentItem[] = [
     updatedAt: '2025-03-06',
     publishedAt: '2025-03-02',
     viewsCount: 680,
+    image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80',
+    ],
+    content: 'Ontdek onze solidaire werkplaats in Brussel en de bouw van duurzame fietsen.',
   },
   {
     id: 'cnt-03',
@@ -456,6 +467,12 @@ export const initialContents: ContentItem[] = [
     updatedAt: '2025-03-09',
     publishedAt: '2025-03-08',
     viewsCount: 890,
+    image: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=800&q=80',
+    ],
+    content: 'Essai gratuit de tricycles semi-couchés et tandems Hase Bikes pour personnes à mobilité réduite.',
   },
   {
     id: 'cnt-04',
@@ -467,6 +484,11 @@ export const initialContents: ContentItem[] = [
     author: 'David Rédacteur',
     updatedAt: '2025-03-12',
     viewsCount: 0,
+    image: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=800&q=80',
+    ],
+    content: 'Guide complet sur l’entraînement outdoor sans impact articulaire grâce aux vélos elliptiques.',
   },
   {
     id: 'cnt-05',
@@ -479,6 +501,11 @@ export const initialContents: ContentItem[] = [
     updatedAt: '2025-02-15',
     publishedAt: '2025-02-15',
     viewsCount: 512,
+    image: 'https://images.unsplash.com/photo-1559348349-86f1f65817fe?auto=format&fit=crop&w=800&q=80',
+    images: [
+      'https://images.unsplash.com/photo-1559348349-86f1f65817fe?auto=format&fit=crop&w=800&q=80',
+    ],
+    content: 'Bilan complet de nos projets associatifs, dons collectés et ateliers réalisés en 2024.',
   },
 ];
 

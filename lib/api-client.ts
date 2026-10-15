@@ -207,6 +207,9 @@ export const apiClient = {
         updatedAt: new Date().toISOString().slice(0, 10),
         publishedAt: content.status === 'published' ? new Date().toISOString().slice(0, 10) : undefined,
         viewsCount: 0,
+        image: content.image,
+        images: content.images || [],
+        content: content.content || '',
       };
       contents.unshift(item);
     }
