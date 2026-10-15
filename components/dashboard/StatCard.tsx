@@ -73,18 +73,18 @@ export const StatCard: React.FC<StatCardProps> = ({
   const finalSuffix = suffix !== undefined ? suffix : parsed.suffix;
 
   return (
-    <div className="relative bg-white rounded-2xl p-5 border border-slate-100 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <p className="text-[12px] font-bold uppercase tracking-wider text-slate-500 truncate">
+    <div className="relative bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <p className="text-[11px] sm:text-[12px] font-bold uppercase tracking-wider text-slate-500 truncate">
           {title}
         </p>
-        <span className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${config.iconBg}`}>
-          <Icon className="w-4.5 h-4.5 w-[18px] h-[18px]" />
+        <span className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0 ${config.iconBg}`}>
+          <Icon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
         </span>
       </div>
 
       <div>
-        <p className="text-2xl sm:text-[28px] font-extrabold text-slate-900 tracking-tight leading-none">
+        <p className="text-xl sm:text-2xl min-[1400px]:text-[26px] font-extrabold text-slate-900 tracking-tight leading-none whitespace-nowrap">
           {prefix}
           <AnimatedCounter value={finalNum} />
           {finalSuffix}

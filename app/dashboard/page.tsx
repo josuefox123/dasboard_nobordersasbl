@@ -41,7 +41,7 @@ export default function OverviewPage() {
     return (
       <div className="space-y-8 animate-fade-in">
         <Skeleton className="h-8 w-48" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 min-[1440px]:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Skeleton className="h-28 rounded-2xl" />
           <Skeleton className="h-28 rounded-2xl" />
           <Skeleton className="h-28 rounded-2xl" />
@@ -62,7 +62,7 @@ export default function OverviewPage() {
     <div className="space-y-8 animate-fade-in">
       <h1 className="text-2xl font-bold text-slate-900">Vue d’ensemble</h1>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 min-[1440px]:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Ventes boutique"
           numericValue={metrics.totalSales}
