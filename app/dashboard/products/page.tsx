@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import {
@@ -19,6 +19,8 @@ import {
   PlusCircle,
   Star,
   Sparkles,
+  Upload,
+  Paperclip,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { Product, ProductCategory } from '@/types/dashboard';
@@ -100,6 +102,63 @@ export default function ProductsPage() {
     setNewPhotoUrl('');
     setFormErrors({});
     setIsModalOpen(true);
+  };
+
+  // Local File Upload Handlers (Attachments)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploadingFiles, setIsUploadingFiles] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const processImageFiles = (files: FileList | File[]) => {
+    if (!files || files.length === 0) return;
+
+    setIsUploadingFiles(true);
+    const fileList = Array.from(files);
+    let loadedCount = 0;
+    const newImages: string[] = [];
+
+    fileList.forEach((file) => {
+      if (!file.type.startsWith('image/')) {
+        loadedCount++;
+        if (loadedCount === fileList.length) setIsUploadingFiles(false);
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        if (result) {
+          newImages.push(result);
+        }
+        loadedCount++;
+        if (loadedCount === fileList.length) {
+          setEditingProduct((prev) => {
+            if (!prev) return prev;
+            const currentImages =
+              prev.images && prev.images.length > 0
+                ? [...prev.images]
+                : prev.image
+                ? [prev.image]
+                : [];
+            const merged = [...currentImages, ...newImages];
+            return {
+              ...prev,
+              images: merged,
+              image: merged[0] || '',
+            };
+          });
+          setIsUploadingFiles(false);
+          if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+          }
+        }
+      };
+      reader.onerror = () => {
+        loadedCount++;
+        if (loadedCount === fileList.length) setIsUploadingFiles(false);
+      };
+      reader.readAsDataURL(file);
+    });
   };
 
   const handleAddPhoto = (urlToAdd?: string) => {
@@ -716,7 +775,7 @@ export default function ProductsPage() {
             </div>
 
             {/* Photos & Galerie Section */}
-            <div className="space-y-3 pt-3 border-t border-slate-100">
+            <div className="space-y-4 pt-3 border-t border-slate-100">
               <div className="flex items-center justify-between">
                 <div>
                   <label className="label-premium mb-0 flex items-center gap-1.5">
@@ -724,7 +783,7 @@ export default function ProductsPage() {
                     <span>Photos du produit</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
-                    Plusieurs photos possibles. La première photo est la photo principale affichée dans la boutique.
+                    Importez des photos depuis votre ordinateur ou ajoutez des liens. La première photo est la photo principale.
                   </p>
                 </div>
                 <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
@@ -732,100 +791,171 @@ export default function ProductsPage() {
                 </span>
               </div>
 
+              {/* Local File Input & Dropzone (Pièces jointes depuis l'ordinateur) */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files) processImageFiles(e.target.files);
+                }}
+              />
+
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(true);
+                }}
+                onDragLeave={() => setIsDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setIsDragOver(false);
+                  if (e.dataTransfer.files) processImageFiles(e.dataTransfer.files);
+                }}
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${
+                  isDragOver
+                    ? 'border-[#0B3C68] bg-blue-50/70 scale-[1.01]'
+                    : 'border-slate-300 hover:border-[#0B3C68] bg-slate-50/70 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex flex-col items-center justify-center gap-2">
+                  <div className="w-12 h-12 rounded-2xl bg-[#0B3C68]/10 text-[#0B3C68] flex items-center justify-center shadow-xs">
+                    {isUploadingFiles ? (
+                      <div className="w-5 h-5 border-2 border-[#0B3C68] border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Upload className="w-5 h-5" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-800">
+                      {isUploadingFiles
+                        ? 'Chargement des photos en cours...'
+                        : 'Ajouter des photos depuis votre ordinateur (pièce jointe)'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 mt-0.5">
+                      Glissez vos photos ici ou cliquez pour parcourir • <strong className="text-[#0B3C68]">Sélectionnez plusieurs photos à la fois</strong>
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs hover:bg-slate-50 transition-colors mt-1"
+                  >
+                    <Paperclip className="w-3.5 h-3.5" />
+                    <span>Choisir des fichiers sur mon PC</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Photos Grid */}
               {((editingProduct.images && editingProduct.images.length > 0) || editingProduct.image) && (
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {(editingProduct.images || (editingProduct.image ? [editingProduct.image] : [])).map((imgUrl, idx) => (
-                    <div
-                      key={idx}
-                      className={`relative group rounded-2xl overflow-hidden border-2 bg-slate-100 aspect-square ${
-                        idx === 0 ? 'border-[#0B3C68] shadow-sm' : 'border-slate-200'
-                      }`}
-                    >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img
-                        src={imgUrl}
-                        alt={`Photo ${idx + 1}`}
-                        className="w-full h-full object-cover"
-                      />
-                      {idx === 0 && (
-                        <div className="absolute top-1.5 left-1.5 bg-[#0B3C68] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
-                          <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
-                          <span>Principale</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
-                        {idx !== 0 && (
+                <div className="space-y-2">
+                  <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+                    <span>Photos actuelles ({ (editingProduct.images || (editingProduct.image ? [editingProduct.image] : [])).length }) :</span>
+                    <span className="text-[10px] text-slate-400">Cliquez sur l&apos;étoile pour changer la photo principale</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    {(editingProduct.images || (editingProduct.image ? [editingProduct.image] : [])).map((imgUrl, idx) => (
+                      <div
+                        key={idx}
+                        className={`relative group rounded-2xl overflow-hidden border-2 bg-slate-100 aspect-square ${
+                          idx === 0 ? 'border-[#0B3C68] shadow-sm ring-2 ring-[#0B3C68]/20' : 'border-slate-200'
+                        }`}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={imgUrl}
+                          alt={`Photo ${idx + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        {idx === 0 && (
+                          <div className="absolute top-1.5 left-1.5 bg-[#0B3C68] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
+                            <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
+                            <span>Principale</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-1">
+                          {idx !== 0 && (
+                            <button
+                              type="button"
+                              onClick={() => handleSetPrimaryPhoto(idx)}
+                              title="Définir comme photo principale"
+                              className="p-1.5 bg-white/95 hover:bg-white text-slate-800 rounded-lg text-xs font-semibold shadow-xs"
+                            >
+                              <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                            </button>
+                          )}
                           <button
                             type="button"
-                            onClick={() => handleSetPrimaryPhoto(idx)}
-                            title="Définir comme photo principale"
-                            className="p-1.5 bg-white/95 hover:bg-white text-slate-800 rounded-lg text-xs font-semibold shadow-xs"
+                            onClick={() => handleRemovePhoto(idx)}
+                            title="Supprimer cette photo"
+                            className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs"
                           >
-                            <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() => handleRemovePhoto(idx)}
-                          title="Supprimer cette photo"
-                          className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
               )}
 
-              {/* Add photo input */}
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={newPhotoUrl}
-                  onChange={(e) => setNewPhotoUrl(e.target.value)}
-                  placeholder="Coller l'URL d'une nouvelle photo (ex. https://...)"
-                  className="input-premium text-xs flex-1"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleAddPhoto();
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleAddPhoto()}
-                  disabled={!newPhotoUrl.trim()}
-                  className="px-3.5 py-2 rounded-2xl bg-[#0B3C68] hover:bg-[#082b4a] disabled:opacity-40 text-white text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
-                >
-                  <PlusCircle className="w-4 h-4" />
-                  <span>Ajouter</span>
-                </button>
-              </div>
-
-              {/* Quick suggestions presets */}
-              <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3 text-amber-500" /> Suggestions rapides :
-                </span>
-                {[
-                  { label: 'Gravel Bambou', url: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80' },
-                  { label: 'Cadre Bambou', url: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=800&q=80' },
-                  { label: 'Tricycle Hase', url: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&w=800&q=80' },
-                  { label: 'ElliptiGO', url: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=800&q=80' },
-                  { label: 'Casque & Équipement', url: 'https://images.unsplash.com/photo-1559348349-86f1f65817fe?auto=format&fit=crop&w=800&q=80' },
-                ].map((sug) => (
+              {/* Collapsible / Alternative option for URL or presets */}
+              <div className="pt-2 border-t border-slate-100 space-y-2">
+                <span className="text-[11px] font-semibold text-slate-500">Ou ajouter via un lien web :</span>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={newPhotoUrl}
+                    onChange={(e) => setNewPhotoUrl(e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="input-premium text-xs flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddPhoto();
+                      }
+                    }}
+                  />
                   <button
-                    key={sug.label}
                     type="button"
-                    onClick={() => handleAddPhoto(sug.url)}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-[#0B3C68] border border-slate-200 transition-colors"
+                    onClick={() => handleAddPhoto()}
+                    disabled={!newPhotoUrl.trim()}
+                    className="px-3.5 py-2 rounded-2xl bg-[#0B3C68] hover:bg-[#082b4a] disabled:opacity-40 text-white text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
                   >
-                    + {sug.label}
+                    <PlusCircle className="w-4 h-4" />
+                    <span>Ajouter URL</span>
                   </button>
-                ))}
+                </div>
+
+                {/* Quick suggestions presets */}
+                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                  <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-amber-500" /> Suggestions :
+                  </span>
+                  {[
+                    { label: 'Gravel Bambou', url: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Cadre Bambou', url: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Tricycle Hase', url: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'ElliptiGO', url: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=800&q=80' },
+                    { label: 'Casque & Équipement', url: 'https://images.unsplash.com/photo-1559348349-86f1f65817fe?auto=format&fit=crop&w=800&q=80' },
+                  ].map((sug) => (
+                    <button
+                      key={sug.label}
+                      type="button"
+                      onClick={() => handleAddPhoto(sug.url)}
+                      className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-[#0B3C68] border border-slate-200 transition-colors"
+                    >
+                      + {sug.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 

@@ -18,6 +18,7 @@ import {
   Image as ImageIcon,
   ExternalLink,
   Sparkles,
+  Paperclip,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { SettingsState, WebsiteSettings } from '@/types/dashboard';
@@ -90,6 +91,18 @@ export default function SettingsPage() {
         [field]: val,
       },
     });
+  };
+
+  const handleLocalImageUpload = (field: keyof WebsiteSettings, file: File) => {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const res = e.target?.result as string;
+      if (res) {
+        updateWebsite(field, res);
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   return (
@@ -255,13 +268,28 @@ export default function SettingsPage() {
                       Logo Blanc (Transparent)
                     </button>
                   </div>
-                  <input
-                    type="text"
-                    value={website.logoUrl}
-                    onChange={(e) => updateWebsite('logoUrl', e.target.value)}
-                    placeholder="URL d'un logo personnalisé (ex: /mon-logo.png ou https://...)"
-                    className="input-premium text-xs"
-                  />
+                  <div className="flex gap-2 items-center">
+                    <input
+                      type="text"
+                      value={website.logoUrl}
+                      onChange={(e) => updateWebsite('logoUrl', e.target.value)}
+                      placeholder="URL ou importer depuis PC (ex: /mon-logo.png ou https://...)"
+                      className="input-premium text-xs flex-1"
+                    />
+                    <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                      <Paperclip className="w-3.5 h-3.5" />
+                      <span>Fichier PC</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleLocalImageUpload('logoUrl', file);
+                        }}
+                      />
+                    </label>
+                  </div>
                 </div>
               </div>
 
@@ -329,14 +357,29 @@ export default function SettingsPage() {
               </div>
 
               <div>
-                <label className="label-premium">URL de l’image de fond du Hero</label>
-                <input
-                  type="text"
-                  value={website.heroImageUrl}
-                  onChange={(e) => updateWebsite('heroImageUrl', e.target.value)}
-                  placeholder="https://images.unsplash.com/..."
-                  className="input-premium font-mono text-xs"
-                />
+                <label className="label-premium">Image de fond du Hero</label>
+                <div className="flex gap-2 items-center">
+                  <input
+                    type="text"
+                    value={website.heroImageUrl}
+                    onChange={(e) => updateWebsite('heroImageUrl', e.target.value)}
+                    placeholder="https://images.unsplash.com/..."
+                    className="input-premium font-mono text-xs flex-1"
+                  />
+                  <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                    <Paperclip className="w-3.5 h-3.5" />
+                    <span>Fichier PC</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleLocalImageUpload('heroImageUrl', file);
+                      }}
+                    />
+                  </label>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -378,14 +421,29 @@ export default function SettingsPage() {
                 </div>
                 <div className="flex-1 w-full space-y-3">
                   <div>
-                    <label className="label-premium">URL de l’image &quot;À Propos&quot;</label>
-                    <input
-                      type="text"
-                      value={website.aboutImageUrl}
-                      onChange={(e) => updateWebsite('aboutImageUrl', e.target.value)}
-                      placeholder="https://..."
-                      className="input-premium font-mono text-xs"
-                    />
+                    <label className="label-premium">Image &quot;À Propos&quot;</label>
+                    <div className="flex gap-2 items-center">
+                      <input
+                        type="text"
+                        value={website.aboutImageUrl}
+                        onChange={(e) => updateWebsite('aboutImageUrl', e.target.value)}
+                        placeholder="https://..."
+                        className="input-premium font-mono text-xs flex-1"
+                      />
+                      <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                        <Paperclip className="w-3.5 h-3.5" />
+                        <span>Fichier PC</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleLocalImageUpload('aboutImageUrl', file);
+                          }}
+                        />
+                      </label>
+                    </div>
                   </div>
                   <div>
                     <label className="label-premium">Titre de la section</label>
