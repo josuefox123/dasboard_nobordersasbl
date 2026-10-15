@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   Settings,
   Truck,
@@ -13,15 +14,19 @@ import {
   Building2,
   Mail,
   ShieldCheck,
+  LayoutTemplate,
+  Image as ImageIcon,
+  ExternalLink,
+  Sparkles,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { SettingsState } from '@/types/dashboard';
+import { SettingsState, WebsiteSettings } from '@/types/dashboard';
 import { Skeleton } from '@/components/ui/Skeleton';
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsState | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'shipping' | 'payments' | 'notifications' | 'languages'>('shipping');
+  const [activeTab, setActiveTab] = useState<'website' | 'shipping' | 'payments' | 'notifications' | 'languages'>('website');
   const [feedback, setFeedback] = useState<string | null>(null);
 
   useEffect(() => {
@@ -60,6 +65,33 @@ export default function SettingsPage() {
     );
   }
 
+  const website: WebsiteSettings = settings.website || {
+    tagline: 'Mobilité douce, vélos solidaires et inclusion active.',
+    logoUrl: '/logoFichier 2logo_2.png',
+    heroTitle: 'Pédalez pour un monde sans frontières',
+    heroSubtitle: 'Découvrez nos vélos artisanaux en bambou, nos tandems adaptés Hase Bikes et soutenez notre projet d’inclusion par le cyclisme solidaire.',
+    heroImageUrl: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1200&q=80',
+    aboutImageUrl: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=1000&q=80',
+    aboutTitle: 'Une association engagée pour l’accessibilité et l’artisanat durable',
+    aboutText: 'No Borders ASBL rassemble passionnés, mécaniciens et bénévoles pour promouvoir la mobilité durable à Bruxelles et au-delà.',
+    announcementBarText: '🚴 Portes ouvertes de notre atelier solidaire ce samedi à Bruxelles !',
+    announcementBarEnabled: true,
+    socialFacebook: 'https://facebook.com/nobordersasbl',
+    socialInstagram: 'https://instagram.com/nobordersasbl',
+    socialYoutube: 'https://youtube.com/@nobordersasbl',
+    footerText: '© 2025 No Borders ASBL · Numéro d’entreprise : 0789.123.456 · Tous droits réservés.',
+  };
+
+  const updateWebsite = (field: keyof WebsiteSettings, val: any) => {
+    setSettings({
+      ...settings,
+      website: {
+        ...website,
+        [field]: val,
+      },
+    });
+  };
+
   return (
     <div className="space-y-6 animate-fade-in max-w-5xl">
       {/* Title */}
@@ -91,6 +123,18 @@ export default function SettingsPage() {
 
       {/* Settings Navigation Tabs */}
       <div className="flex items-center gap-2 pb-1 overflow-x-auto scrollbar-none">
+        <button
+          onClick={() => setActiveTab('website')}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
+            activeTab === 'website'
+              ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+              : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
+          }`}
+        >
+          <LayoutTemplate className="w-4 h-4" />
+          <span>Site Web & Médias</span>
+        </button>
+
         <button
           onClick={() => setActiveTab('shipping')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
@@ -142,6 +186,310 @@ export default function SettingsPage() {
 
       {/* Main Settings Form */}
       <form onSubmit={handleSave} className="panel space-y-6">
+        {/* 0. WEBSITE TAB */}
+        {activeTab === 'website' && (
+          <div className="space-y-7 animate-fade-in">
+            <div className="border-b border-slate-100 pb-3">
+              <h3 className="text-base font-bold text-slate-900 mb-1">
+                Médias, Images & Visuels du Site Web
+              </h3>
+              <p className="text-xs text-slate-500">
+                Personnalisez le logo, les bannières d’accueil (Hero), les images des sections et les textes clés de votre site public.
+              </p>
+            </div>
+
+            {/* 1. Logo du site web */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="w-4 h-4 text-[#0B3C68]" />
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Logo du site public</h4>
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
+                {/* Aperçus */}
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-xl bg-white border border-slate-200 shadow-xs flex items-center justify-center min-w-[120px] h-16">
+                    <Image
+                      src={website.logoUrl || '/logoFichier 2logo_2.png'}
+                      alt="Aperçu logo clair"
+                      width={110}
+                      height={40}
+                      className="max-h-12 w-auto object-contain"
+                    />
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#0B3C68] shadow-xs flex items-center justify-center min-w-[120px] h-16">
+                    <Image
+                      src="/logoFichier 3logo_2_blanc.png"
+                      alt="Aperçu logo blanc"
+                      width={110}
+                      height={40}
+                      className="max-h-12 w-auto object-contain"
+                    />
+                  </div>
+                </div>
+
+                {/* Sélecteurs */}
+                <div className="flex-1 w-full space-y-2">
+                  <label className="label-premium">Source du logo</label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => updateWebsite('logoUrl', '/logoFichier 2logo_2.png')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                        website.logoUrl === '/logoFichier 2logo_2.png'
+                          ? 'bg-[#0B3C68] text-white border-[#0B3C68]'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      Logo Couleur (Officiel)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateWebsite('logoUrl', '/logoFichier 3logo_2_blanc.png')}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                        website.logoUrl === '/logoFichier 3logo_2_blanc.png'
+                          ? 'bg-[#0B3C68] text-white border-[#0B3C68]'
+                          : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
+                      }`}
+                    >
+                      Logo Blanc (Transparent)
+                    </button>
+                  </div>
+                  <input
+                    type="text"
+                    value={website.logoUrl}
+                    onChange={(e) => updateWebsite('logoUrl', e.target.value)}
+                    placeholder="URL d'un logo personnalisé (ex: /mon-logo.png ou https://...)"
+                    className="input-premium text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label-premium">Slogan / Sous-titre du logo</label>
+                <input
+                  type="text"
+                  value={website.tagline}
+                  onChange={(e) => updateWebsite('tagline', e.target.value)}
+                  placeholder="Ex : Mobilité douce, vélos solidaires et inclusion active."
+                  className="input-premium"
+                />
+              </div>
+            </div>
+
+            {/* 2. Bannière Hero d'accueil */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Image & Bannière Hero (Page d&apos;accueil)</h4>
+                </div>
+              </div>
+
+              {/* Prévisualisation Bannière */}
+              <div className="relative rounded-2xl overflow-hidden h-44 sm:h-52 w-full border border-slate-200 bg-slate-900 group">
+                <Image
+                  src={website.heroImageUrl || 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1200&q=80'}
+                  alt="Aperçu Bannière Hero"
+                  fill
+                  className="object-cover opacity-70 group-hover:scale-102 transition-transform duration-500"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/30 to-transparent p-5 flex flex-col justify-end text-white">
+                  <p className="text-lg sm:text-2xl font-black drop-shadow-md">{website.heroTitle}</p>
+                  <p className="text-xs sm:text-sm text-slate-200 line-clamp-2 max-w-xl drop-shadow-sm">{website.heroSubtitle}</p>
+                </div>
+              </div>
+
+              {/* Suggestions rapides d'images */}
+              <div className="space-y-1.5">
+                <label className="label-premium">Suggestions rapides de visuels No Borders</label>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => updateWebsite('heroImageUrl', 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=1200&q=80')}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition-colors"
+                  >
+                    🚴 Atelier & Vélo Gravel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateWebsite('heroImageUrl', 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=1200&q=80')}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition-colors"
+                  >
+                    🎋 Cadres Bambou Artisanaux
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateWebsite('heroImageUrl', 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=1200&q=80')}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 transition-colors"
+                  >
+                    🤝 Tandem Solidaire & Inclusif
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="label-premium">URL de l’image de fond du Hero</label>
+                <input
+                  type="text"
+                  value={website.heroImageUrl}
+                  onChange={(e) => updateWebsite('heroImageUrl', e.target.value)}
+                  placeholder="https://images.unsplash.com/..."
+                  className="input-premium font-mono text-xs"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="label-premium">Titre d’accroche Hero</label>
+                  <input
+                    type="text"
+                    value={website.heroTitle}
+                    onChange={(e) => updateWebsite('heroTitle', e.target.value)}
+                    placeholder="Ex : Pédalez pour un monde sans frontières"
+                    className="input-premium"
+                  />
+                </div>
+                <div>
+                  <label className="label-premium">Sous-titre descriptif</label>
+                  <input
+                    type="text"
+                    value={website.heroSubtitle}
+                    onChange={(e) => updateWebsite('heroSubtitle', e.target.value)}
+                    placeholder="Ex : Découvrez nos vélos en bambou..."
+                    className="input-premium"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Section À Propos & Présentation */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Image & Contenu Section &quot;À Propos&quot;</h4>
+
+              <div className="flex flex-col sm:flex-row gap-4 items-start">
+                <div className="relative w-full sm:w-48 h-32 rounded-xl overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+                  <Image
+                    src={website.aboutImageUrl || 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=600&q=80'}
+                    alt="Aperçu À Propos"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="flex-1 w-full space-y-3">
+                  <div>
+                    <label className="label-premium">URL de l’image &quot;À Propos&quot;</label>
+                    <input
+                      type="text"
+                      value={website.aboutImageUrl}
+                      onChange={(e) => updateWebsite('aboutImageUrl', e.target.value)}
+                      placeholder="https://..."
+                      className="input-premium font-mono text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="label-premium">Titre de la section</label>
+                    <input
+                      type="text"
+                      value={website.aboutTitle}
+                      onChange={(e) => updateWebsite('aboutTitle', e.target.value)}
+                      placeholder="Ex : Une association engagée..."
+                      className="input-premium"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="label-premium">Texte de présentation</label>
+                <textarea
+                  value={website.aboutText}
+                  onChange={(e) => updateWebsite('aboutText', e.target.value)}
+                  rows={2}
+                  className="input-premium resize-none"
+                  placeholder="Présentez la mission solidaire de No Borders ASBL..."
+                />
+              </div>
+            </div>
+
+            {/* 4. Bandeau d'Annonce Top Bar */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Bandeau d’Annonce (Haut de page)</h4>
+                  <p className="text-[11px] text-slate-400">Message défilant ou alerte visible au sommet du site public.</p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={website.announcementBarEnabled}
+                  onChange={(e) => updateWebsite('announcementBarEnabled', e.target.checked)}
+                  className="checkbox checkbox-primary"
+                />
+              </div>
+              {website.announcementBarEnabled && (
+                <div>
+                  <label className="label-premium">Texte du bandeau</label>
+                  <input
+                    type="text"
+                    value={website.announcementBarText}
+                    onChange={(e) => updateWebsite('announcementBarText', e.target.value)}
+                    placeholder="Ex : 🚴 Portes ouvertes de notre atelier solidaire ce samedi !"
+                    className="input-premium"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* 5. Réseaux Sociaux & Copyright */}
+            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Réseaux Sociaux & Pied de Page</h4>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="label-premium">Lien Facebook</label>
+                  <input
+                    type="text"
+                    value={website.socialFacebook}
+                    onChange={(e) => updateWebsite('socialFacebook', e.target.value)}
+                    placeholder="https://facebook.com/..."
+                    className="input-premium text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="label-premium">Lien Instagram</label>
+                  <input
+                    type="text"
+                    value={website.socialInstagram}
+                    onChange={(e) => updateWebsite('socialInstagram', e.target.value)}
+                    placeholder="https://instagram.com/..."
+                    className="input-premium text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="label-premium">Lien YouTube</label>
+                  <input
+                    type="text"
+                    value={website.socialYoutube}
+                    onChange={(e) => updateWebsite('socialYoutube', e.target.value)}
+                    placeholder="https://youtube.com/..."
+                    className="input-premium text-xs"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="label-premium">Texte de copyright (Pied de page)</label>
+                <input
+                  type="text"
+                  value={website.footerText}
+                  onChange={(e) => updateWebsite('footerText', e.target.value)}
+                  placeholder="© 2025 No Borders ASBL..."
+                  className="input-premium"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* 1. SHIPPING TAB */}
         {activeTab === 'shipping' && (
           <div className="space-y-6">

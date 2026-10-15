@@ -11,6 +11,7 @@ export interface Product {
   status: 'in_stock' | 'low_stock' | 'out_of_stock';
   isFeatured?: boolean;
   image?: string;
+  images?: string[];
   description: string;
   createdAt: string;
 }
@@ -96,6 +97,23 @@ export interface DashboardUser {
   avatar?: string;
 }
 
+export interface WebsiteSettings {
+  tagline: string;
+  logoUrl: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroImageUrl: string;
+  aboutImageUrl: string;
+  aboutTitle: string;
+  aboutText: string;
+  announcementBarText: string;
+  announcementBarEnabled: boolean;
+  socialFacebook: string;
+  socialInstagram: string;
+  socialYoutube: string;
+  footerText: string;
+}
+
 export interface SettingsState {
   general: {
     siteName: string;
@@ -105,6 +123,7 @@ export interface SettingsState {
     defaultLocale: 'fr' | 'nl' | 'en';
     activeLocales: ('fr' | 'nl' | 'en')[];
   };
+  website: WebsiteSettings;
   shipping: {
     enableBpost: boolean;
     bpostStandardRate: number;
