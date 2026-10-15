@@ -1,10 +1,15 @@
+'use client';
+
 import React from 'react';
 import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
-import { smoothPath } from '@/lib/chart';
+import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 
 interface StatCardProps {
   title: string;
-  value: string | number;
+  value?: string | number;
+  numericValue?: number;
+  prefix?: string;
+  suffix?: string;
   change?: number;
   changeLabel?: string;
   icon: LucideIcon;
@@ -16,66 +21,57 @@ interface StatCardProps {
 const colorConfig = {
   blue: {
     iconBg: 'bg-blue-50 text-[#0B3C68]',
-    stroke: '#0B3C68',
     pill: 'bg-blue-50 text-blue-700',
   },
   emerald: {
     iconBg: 'bg-emerald-50 text-emerald-600',
-    stroke: '#10B981',
     pill: 'bg-emerald-50 text-emerald-700',
   },
   yellow: {
     iconBg: 'bg-amber-50 text-amber-600',
-    stroke: '#F59E0B',
     pill: 'bg-amber-50 text-amber-700',
   },
   purple: {
     iconBg: 'bg-indigo-50 text-indigo-600',
-    stroke: '#6366F1',
     pill: 'bg-indigo-50 text-indigo-700',
   },
 };
 
-const DEFAULT_TREND = [4, 6, 5, 8, 6, 9, 7, 10];
+function parseValue(val?: string | number): { num: number; suffix: string } {
+  if (val === undefined || val === null) return { num: 0, suffix: '' };
+  if (typeof val === 'number') return { num: val, suffix: '' };
 
-function Sparkline({ values, stroke }: { values: number[]; stroke: string }) {
-  const w = 72;
-  const h = 36;
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const range = max - min || 1;
-  const points = values.map((v, i) => ({
-    x: (i / (values.length - 1)) * w,
-    y: h - 4 - ((v - min) / range) * (h - 10),
-  }));
-  const last = points[points.length - 1];
-
-  return (
-    <svg viewBox={`0 0 ${w} ${h}`} className="w-[72px] h-[36px] shrink-0" aria-hidden="true">
-      <path
-        d={smoothPath(points)}
-        fill="none"
-        stroke={stroke}
-        strokeWidth={2.5}
-        strokeLinecap="round"
-      />
-      <circle cx={last.x - 1} cy={last.y} r={3} fill={stroke} />
-    </svg>
-  );
+  const clean = String(val).replace(/[\s\u00A0]/g, '');
+  const match = clean.match(/^([0-9.,]+)(.*)$/);
+  if (match) {
+    const rawNum = match[1].replace(',', '.');
+    const num = parseFloat(rawNum);
+    if (!isNaN(num)) {
+      return { num, suffix: match[2] ? ` ${match[2]}` : '' };
+    }
+  }
+  return { num: 0, suffix: String(val) };
 }
 
 export const StatCard: React.FC<StatCardProps> = ({
   title,
   value,
+  numericValue,
+  prefix = '',
+  suffix,
   change,
   changeLabel = 'vs mois précédent',
   icon: Icon,
   variant = 'blue',
   subtext,
-  trend = DEFAULT_TREND,
 }) => {
   const config = colorConfig[variant] || colorConfig.blue;
   const isPositive = change !== undefined ? change >= 0 : true;
+
+  // Déterminer la valeur numérique et le suffixe
+  const parsed = parseValue(value);
+  const finalNum = numericValue !== undefined ? numericValue : parsed.num;
+  const finalSuffix = suffix !== undefined ? suffix : parsed.suffix;
 
   return (
     <div className="relative bg-white rounded-2xl p-5 border border-slate-100 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all">
@@ -88,14 +84,12 @@ export const StatCard: React.FC<StatCardProps> = ({
         </span>
       </div>
 
-      <div className="flex items-end justify-between gap-2 mb-2">
-        <p className="text-2xl sm:text-[26px] font-extrabold text-slate-900 tracking-tight">
-          {value}
+      <div className="mb-3">
+        <p className="text-2xl sm:text-[28px] font-extrabold text-slate-900 tracking-tight leading-none">
+          {prefix}
+          <AnimatedCounter value={finalNum} />
+          {finalSuffix}
         </p>
-        <Sparkline
-          values={trend.length > 1 ? trend : DEFAULT_TREND}
-          stroke={config.stroke}
-        />
       </div>
 
       <div className="flex items-center gap-2 text-xs">

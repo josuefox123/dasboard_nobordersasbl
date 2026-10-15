@@ -65,33 +65,33 @@ export default function OverviewPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 min-[1440px]:grid-cols-4 gap-5">
         <StatCard
           title="Ventes boutique"
-          value={`${metrics.totalSales.toLocaleString('fr-BE')} €`}
+          numericValue={metrics.totalSales}
+          suffix=" €"
           change={metrics.salesGrowthPercent}
           icon={ShoppingBag}
           variant="emerald"
-          trend={metrics.recentSalesData.map((d) => d.sales)}
         />
         <StatCard
           title="Commandes"
-          value={metrics.totalOrders}
+          numericValue={metrics.totalOrders}
           change={metrics.ordersGrowthPercent}
           icon={Package}
           variant="blue"
         />
         <StatCard
           title="Clients actifs"
-          value={customersCount}
+          numericValue={customersCount}
           icon={Users}
           variant="purple"
           subtext={`${lowStock.length} produit(s) en stock faible`}
         />
         <StatCard
           title="Dons collectés"
-          value={`${metrics.totalDonations.toLocaleString('fr-BE')} €`}
+          numericValue={metrics.totalDonations}
+          suffix=" €"
           change={metrics.donationsGrowthPercent}
           icon={HeartHandshake}
           variant="yellow"
-          trend={metrics.recentSalesData.map((d) => d.donations)}
         />
       </div>
 

@@ -1,5 +1,8 @@
-import React from 'react';
+'use client';
+
+import React, { useEffect, useState } from 'react';
 import { Order } from '@/types/dashboard';
+import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 
 export const OrderStatus: React.FC<{ orders: Order[] }> = ({ orders }) => {
   const refunded = orders.filter((o) => o.paymentStatus === 'refunded').length;
@@ -7,7 +10,31 @@ export const OrderStatus: React.FC<{ orders: Order[] }> = ({ orders }) => {
     (o) => o.paymentStatus !== 'refunded' && o.shippingStatus === 'delivered'
   ).length;
   const inProgress = orders.length - refunded - delivered;
-  const pct = orders.length ? Math.round((delivered / orders.length) * 100) : 0;
+  const targetPct = orders.length ? Math.round((delivered / orders.length) * 100) : 0;
+  const [animatedPct, setAnimatedPct] = useState(0);
+
+  useEffect(() => {
+    let startTimestamp: number | null = null;
+    const duration = 900;
+    let animId: number;
+
+    const step = (timestamp: number) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const elapsed = timestamp - startTimestamp;
+      const progress = Math.min(elapsed / duration, 1);
+      const ease = 1 - Math.pow(1 - progress, 3);
+      setAnimatedPct(Math.round(ease * targetPct));
+
+      if (progress < 1) {
+        animId = requestAnimationFrame(step);
+      } else {
+        setAnimatedPct(targetPct);
+      }
+    };
+
+    animId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(animId);
+  }, [targetPct]);
 
   const r = 62;
   const c = 2 * Math.PI * r;
@@ -38,12 +65,11 @@ export const OrderStatus: React.FC<{ orders: Order[] }> = ({ orders }) => {
             stroke="url(#orderArcGrad)"
             strokeWidth={14}
             strokeLinecap="round"
-            strokeDasharray={`${(c * pct) / 100} ${c}`}
+            strokeDasharray={`${(c * animatedPct) / 100} ${c}`}
             transform="rotate(-90 90 90)"
-            className="transition-all duration-700 ease-out"
           />
           <text x={90} y={88} textAnchor="middle" fontSize={30} fontWeight={800} fill="#0F172A">
-            {pct}
+            {animatedPct}
             <tspan fontSize={16} fontWeight={700} fill="#10B981">%</tspan>
           </text>
           <text x={90} y={110} textAnchor="middle" fontSize={10} fontWeight={700} letterSpacing={1.5} fill="#94A3B8">
@@ -56,21 +82,27 @@ export const OrderStatus: React.FC<{ orders: Order[] }> = ({ orders }) => {
         <div className="p-2 rounded-xl bg-slate-50">
           <div className="flex items-center justify-center gap-1.5 mb-0.5">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <p className="text-base font-bold text-slate-900">{delivered}</p>
+            <p className="text-base font-bold text-slate-900">
+              <AnimatedCounter value={delivered} />
+            </p>
           </div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Livrées</p>
         </div>
         <div className="p-2 rounded-xl bg-slate-50">
           <div className="flex items-center justify-center gap-1.5 mb-0.5">
             <span className="w-2 h-2 rounded-full bg-amber-500" />
-            <p className="text-base font-bold text-slate-900">{inProgress}</p>
+            <p className="text-base font-bold text-slate-900">
+              <AnimatedCounter value={inProgress} />
+            </p>
           </div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">En cours</p>
         </div>
         <div className="p-2 rounded-xl bg-slate-50">
           <div className="flex items-center justify-center gap-1.5 mb-0.5">
             <span className="w-2 h-2 rounded-full bg-rose-500" />
-            <p className="text-base font-bold text-slate-900">{refunded}</p>
+            <p className="text-base font-bold text-slate-900">
+              <AnimatedCounter value={refunded} />
+            </p>
           </div>
           <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Remboursées</p>
         </div>
