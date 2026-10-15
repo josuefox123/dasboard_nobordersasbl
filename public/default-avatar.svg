@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="100%" height="100%" fill="none">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F1F5F9" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </linearGradient>
+    <linearGradient id="personGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B3C68" />
+      <stop offset="100%" stop-color="#1E40AF" />
+    </linearGradient>
+  </defs>
+  <!-- Background Circle -->
+  <rect width="120" height="120" rx="60" fill="url(#bgGrad)" />
+  <circle cx="60" cy="60" r="59" stroke="#CBD5E1" stroke-width="2" />
+  
+  <!-- Head Silhouette -->
+  <circle cx="60" cy="46" r="20" fill="url(#personGrad)" />
+  
+  <!-- Shoulders / Torso Silhouette -->
+  <path
+    d="M26 102 C26 82 41 74 60 74 C79 74 94 82 94 102 C94 106 91 108 87 108 L33 108 C29 108 26 106 26 102 Z"
+    fill="url(#personGrad)"
+  />
+</svg>

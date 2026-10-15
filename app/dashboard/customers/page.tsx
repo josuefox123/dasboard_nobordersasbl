@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import {
   Users,
@@ -251,8 +252,14 @@ export default function CustomersPage() {
                       </td>
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-blue-100 text-[#0B3C68] font-bold flex items-center justify-center text-xs shrink-0">
-                            {cust.name.slice(0, 2).toUpperCase()}
+                          <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+                            <Image
+                              src="/default-avatar.svg"
+                              alt={cust.name}
+                              width={32}
+                              height={32}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           <div>
                             <p className="font-bold text-slate-900">{cust.name}</p>

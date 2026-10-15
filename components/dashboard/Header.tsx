@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Menu, Search, Bell, AlertTriangle, FileCheck2, X, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
@@ -226,8 +227,15 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
         </div>
 
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B3C68] to-[#2563EB] text-white text-xs font-bold flex items-center justify-center shadow-lg shadow-blue-700/30">
-            JA
+          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-slate-100 ring-2 ring-white">
+            <Image
+              src="/default-avatar.svg"
+              alt="Photo de profil"
+              width={40}
+              height={40}
+              className="w-full h-full object-cover"
+              priority
+            />
           </div>
           <div className="hidden sm:block leading-tight">
             <p className="text-sm font-bold text-slate-900">Josué</p>

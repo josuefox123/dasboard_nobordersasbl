@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import {
   ShieldCheck,
   UserCheck,
@@ -234,8 +235,14 @@ export default function UsersPage() {
 
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="w-9 h-9 rounded-full bg-slate-900 text-amber-300 font-bold flex items-center justify-center text-xs shadow-sm">
-                            {user.name.slice(0, 2).toUpperCase()}
+                          <div className="relative w-9 h-9 rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+                            <Image
+                              src={user.avatar || '/default-avatar.svg'}
+                              alt={user.name}
+                              width={36}
+                              height={36}
+                              className="w-full h-full object-cover"
+                            />
                           </div>
                           <div>
                             <p className="font-bold text-slate-900">{user.name}</p>

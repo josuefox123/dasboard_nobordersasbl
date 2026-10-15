@@ -184,9 +184,22 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {mainNav.map(renderCollapsedLink)}
             </nav>
 
-            <nav className="w-full flex flex-col gap-1 px-2">
+            <nav className="w-full flex flex-col gap-1 px-2 mb-2">
               {bottomNav.map(renderCollapsedLink)}
             </nav>
+
+            <div className="mt-auto relative group flex items-center justify-center w-9 h-9 mx-auto rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+              <Image
+                src="/default-avatar.svg"
+                alt="Josué Admin"
+                width={36}
+                height={36}
+                className="w-full h-full object-cover"
+              />
+              <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl">
+                Josué (Admin)
+              </span>
+            </div>
           </div>
         )}
 
@@ -264,9 +277,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
 
           {/* Profil bas de sidebar */}
-          <div className="mt-4 mx-3 p-3 rounded-xl bg-slate-50 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#0B3C68] text-white text-xs font-bold flex items-center justify-center shrink-0">
-              JA
+          <div className="mt-4 mx-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-100">
+              <Image
+                src="/default-avatar.svg"
+                alt="Profil Josué"
+                width={32}
+                height={32}
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="min-w-0">
               <p className="text-xs font-bold text-slate-800 truncate">Josué</p>
