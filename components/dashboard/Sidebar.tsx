@@ -17,6 +17,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LucideIcon,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -43,6 +44,7 @@ const mainNav: NavItem[] = [
 ];
 
 const bottomNav: NavItem[] = [
+  { name: 'Mon Profil', href: '/dashboard/profile', icon: User },
   { name: 'Paramètres', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -188,7 +190,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {bottomNav.map(renderCollapsedLink)}
             </nav>
 
-            <div className="mt-auto relative group flex items-center justify-center w-9 h-9 mx-auto rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
+            <Link
+              href="/dashboard/profile"
+              onClick={onCloseMobile}
+              className="mt-auto relative group flex items-center justify-center w-9 h-9 mx-auto rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0 hover:ring-2 hover:ring-[#0B3C68]/30 transition-all"
+              title="Mon Profil"
+            >
               <Image
                 src="/default-avatar.svg"
                 alt="Josué Admin"
@@ -197,9 +204,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="w-full h-full object-cover"
               />
               <span className="pointer-events-none absolute left-full ml-3 px-2.5 py-1 bg-slate-900 text-white text-xs font-semibold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 shadow-xl">
-                Josué (Admin)
+                Mon Profil
               </span>
-            </div>
+            </Link>
           </div>
         )}
 
@@ -277,8 +284,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
 
           {/* Profil bas de sidebar */}
-          <div className="mt-4 mx-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center gap-3">
-            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-100">
+          <Link
+            href="/dashboard/profile"
+            onClick={onCloseMobile}
+            className="mt-4 mx-3 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-100 flex items-center gap-3 transition-colors group cursor-pointer"
+            title="Accéder à mon profil"
+          >
+            <div className="relative w-8 h-8 rounded-full overflow-hidden border border-slate-200 shrink-0 bg-slate-100 group-hover:ring-2 group-hover:ring-[#0B3C68]/20 transition-all">
               <Image
                 src="/default-avatar.svg"
                 alt="Profil Josué"
@@ -287,11 +299,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-800 truncate">Josué</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-slate-800 group-hover:text-[#0B3C68] truncate transition-colors">
+                Josué
+              </p>
               <p className="text-[10px] text-slate-400 truncate">Administrateur</p>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
     </>

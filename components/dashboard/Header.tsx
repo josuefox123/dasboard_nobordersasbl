@@ -226,8 +226,12 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
           )}
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-slate-100 ring-2 ring-white">
+        <Link
+          href="/dashboard/profile"
+          className="flex items-center gap-3 p-1.5 -mr-1.5 rounded-xl hover:bg-white/80 transition-colors group cursor-pointer"
+          title="Mon Profil"
+        >
+          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-slate-100 ring-2 ring-white group-hover:ring-[#0B3C68]/20 transition-all">
             <Image
               src="/default-avatar.svg"
               alt="Photo de profil"
@@ -237,11 +241,13 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
               priority
             />
           </div>
-          <div className="hidden sm:block leading-tight">
-            <p className="text-sm font-bold text-slate-900">Josué</p>
+          <div className="hidden sm:block leading-tight text-left">
+            <p className="text-sm font-bold text-slate-900 group-hover:text-[#0B3C68] transition-colors">
+              Josué
+            </p>
             <p className="text-[11px] text-slate-500">Administrateur</p>
           </div>
-        </div>
+        </Link>
       </div>
     </header>
   );

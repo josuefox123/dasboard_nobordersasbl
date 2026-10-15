@@ -244,6 +244,22 @@ export const apiClient = {
     return null;
   },
 
+  // PROFIL ACTUEL
+  async getCurrentUser(): Promise<DashboardUser> {
+    const users = getStorageItem<DashboardUser[]>('users', initialUsers);
+    return users[0] || initialUsers[0];
+  },
+
+  async updateCurrentUser(data: Partial<DashboardUser>): Promise<DashboardUser> {
+    const users = getStorageItem<DashboardUser[]>('users', initialUsers);
+    if (users.length > 0) {
+      users[0] = { ...users[0], ...data };
+      setStorageItem('users', users);
+      return users[0];
+    }
+    return initialUsers[0];
+  },
+
   // PARAMÈTRES
   async getSettings(): Promise<SettingsState> {
     return getStorageItem<SettingsState>('settings', initialSettings);
