@@ -16,9 +16,7 @@ import {
   Tag,
   Image as ImageIcon,
   X,
-  PlusCircle,
   Star,
-  Sparkles,
   Upload,
   Paperclip,
 } from 'lucide-react';
@@ -45,7 +43,6 @@ export default function ProductsPage() {
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
-  const [newPhotoUrl, setNewPhotoUrl] = useState('');
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
 
@@ -82,7 +79,6 @@ export default function ProductsPage() {
       images: [],
       image: '',
     });
-    setNewPhotoUrl('');
     setFormErrors({});
     setIsModalOpen(true);
   };
@@ -99,7 +95,6 @@ export default function ProductsPage() {
       images: initialImages,
       image: initialImages[0] || '',
     });
-    setNewPhotoUrl('');
     setFormErrors({});
     setIsModalOpen(true);
   };
@@ -159,25 +154,6 @@ export default function ProductsPage() {
       };
       reader.readAsDataURL(file);
     });
-  };
-
-  const handleAddPhoto = (urlToAdd?: string) => {
-    const url = (urlToAdd || newPhotoUrl).trim();
-    if (!url || !editingProduct) return;
-    const currentImages =
-      editingProduct.images && editingProduct.images.length > 0
-        ? [...editingProduct.images]
-        : editingProduct.image
-        ? [editingProduct.image]
-        : [];
-    if (currentImages.includes(url)) return;
-    const updated = [...currentImages, url];
-    setEditingProduct({
-      ...editingProduct,
-      images: updated,
-      image: updated[0] || '',
-    });
-    if (!urlToAdd) setNewPhotoUrl('');
   };
 
   const handleRemovePhoto = (index: number) => {
@@ -905,58 +881,6 @@ export default function ProductsPage() {
                   </div>
                 </div>
               )}
-
-              {/* Collapsible / Alternative option for URL or presets */}
-              <div className="pt-2 border-t border-slate-100 space-y-2">
-                <span className="text-[11px] font-semibold text-slate-500">Ou ajouter via un lien web :</span>
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={newPhotoUrl}
-                    onChange={(e) => setNewPhotoUrl(e.target.value)}
-                    placeholder="https://images.unsplash.com/..."
-                    className="input-premium text-xs flex-1"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddPhoto();
-                      }
-                    }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleAddPhoto()}
-                    disabled={!newPhotoUrl.trim()}
-                    className="px-3.5 py-2 rounded-2xl bg-[#0B3C68] hover:bg-[#082b4a] disabled:opacity-40 text-white text-xs font-bold transition-all flex items-center gap-1.5 shrink-0"
-                  >
-                    <PlusCircle className="w-4 h-4" />
-                    <span>Ajouter URL</span>
-                  </button>
-                </div>
-
-                {/* Quick suggestions presets */}
-                <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                  <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-amber-500" /> Suggestions :
-                  </span>
-                  {[
-                    { label: 'Gravel Bambou', url: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80' },
-                    { label: 'Cadre Bambou', url: 'https://images.unsplash.com/photo-1576435728678-68d0fbf94e91?auto=format&fit=crop&w=800&q=80' },
-                    { label: 'Tricycle Hase', url: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&w=800&q=80' },
-                    { label: 'ElliptiGO', url: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=800&q=80' },
-                    { label: 'Casque & Équipement', url: 'https://images.unsplash.com/photo-1559348349-86f1f65817fe?auto=format&fit=crop&w=800&q=80' },
-                  ].map((sug) => (
-                    <button
-                      key={sug.label}
-                      type="button"
-                      onClick={() => handleAddPhoto(sug.url)}
-                      className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-[#0B3C68] border border-slate-200 transition-colors"
-                    >
-                      + {sug.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
             </div>
 
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
