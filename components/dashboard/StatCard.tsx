@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { LucideIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { LucideIcon } from 'lucide-react';
 import { AnimatedCounter } from '@/components/ui/AnimatedCounter';
 
 interface StatCardProps {
@@ -66,7 +66,6 @@ export const StatCard: React.FC<StatCardProps> = ({
   subtext,
 }) => {
   const config = colorConfig[variant] || colorConfig.blue;
-  const isPositive = change !== undefined ? change >= 0 : true;
 
   // Déterminer la valeur numérique et le suffixe
   const parsed = parseValue(value);
@@ -84,35 +83,12 @@ export const StatCard: React.FC<StatCardProps> = ({
         </span>
       </div>
 
-      <div className="mb-3">
+      <div>
         <p className="text-2xl sm:text-[28px] font-extrabold text-slate-900 tracking-tight leading-none">
           {prefix}
           <AnimatedCounter value={finalNum} />
           {finalSuffix}
         </p>
-      </div>
-
-      <div className="flex items-center gap-2 text-xs">
-        {change !== undefined ? (
-          <>
-            <span
-              className={`inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded-md ${
-                isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-              }`}
-            >
-              {isPositive ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <TrendingDown className="w-3 h-3" />
-              )}
-              {isPositive ? '+' : ''}
-              {change}%
-            </span>
-            <span className="text-slate-400 font-medium truncate">{changeLabel}</span>
-          </>
-        ) : subtext ? (
-          <span className="text-slate-500 font-medium truncate">{subtext}</span>
-        ) : null}
       </div>
     </div>
   );

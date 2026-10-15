@@ -67,14 +67,12 @@ export default function OverviewPage() {
           title="Ventes boutique"
           numericValue={metrics.totalSales}
           suffix=" €"
-          change={metrics.salesGrowthPercent}
           icon={ShoppingBag}
           variant="emerald"
         />
         <StatCard
           title="Commandes"
           numericValue={metrics.totalOrders}
-          change={metrics.ordersGrowthPercent}
           icon={Package}
           variant="blue"
         />
@@ -83,13 +81,11 @@ export default function OverviewPage() {
           numericValue={customersCount}
           icon={Users}
           variant="purple"
-          subtext={`${lowStock.length} produit(s) en stock faible`}
         />
         <StatCard
           title="Dons collectés"
           numericValue={metrics.totalDonations}
           suffix=" €"
-          change={metrics.donationsGrowthPercent}
           icon={HeartHandshake}
           variant="yellow"
         />
