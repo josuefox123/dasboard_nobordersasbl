@@ -187,7 +187,7 @@ export default function UsersPage() {
             <p className="font-semibold text-slate-700">Aucun utilisateur trouvé</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 -my-6">
+          <div className="overflow-x-auto -mx-6 -mt-6 mb-0">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
@@ -285,10 +285,11 @@ export default function UsersPage() {
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <button
                           onClick={() => handleOpenEdit(user)}
-                          className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-100 font-semibold transition-colors inline-flex items-center gap-1.5"
+                          className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Modifier le rôle et le statut"
+                          aria-label={`Modifier le rôle de ${user.name}`}
                         >
-                          <Edit2 className="w-3.5 h-3.5" />
-                          <span>Modifier rôle</span>
+                          <Edit2 className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -299,13 +300,15 @@ export default function UsersPage() {
           </div>
         )}
 
-        <Pagination
-          currentPage={currentPage}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
+        <div className="mt-6 pt-2">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
+        </div>
       </div>
 
       {/* Permissions Matrix Reference Table */}

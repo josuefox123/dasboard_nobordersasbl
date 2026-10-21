@@ -4,6 +4,15 @@ import {
   Customer,
   Donation,
   ContentItem,
+  ContactMessage,
+  FaqItem,
+  ActivityItem,
+  NewsItem,
+  PressItem,
+  PartnerItem,
+  CategoryItem,
+  ParcoursItem,
+  PaymentRecord,
   DashboardUser,
   SettingsState,
   OverviewMetrics,
@@ -17,6 +26,15 @@ import {
   initialCustomers,
   initialDonations,
   initialContents,
+  initialContactMessages,
+  initialFaqs,
+  initialActivities,
+  initialNews,
+  initialPressItems,
+  initialPartners,
+  initialCategories,
+  initialParcours,
+  initialPayments,
   initialUsers,
   initialSettings,
   overviewMetricsData,
@@ -220,6 +238,440 @@ export const apiClient = {
   async deleteContent(id: string): Promise<void> {
     const contents = getStorageItem<ContentItem[]>('contents', initialContents);
     setStorageItem('contents', contents.filter((c) => c.id !== id));
+  },
+
+  // MESSAGES DE CONTACT
+  async getContactMessages(): Promise<ContactMessage[]> {
+    return getStorageItem<ContactMessage[]>('contact_messages', initialContactMessages);
+  },
+
+  async markContactMessageAsRead(id: string): Promise<ContactMessage | null> {
+    const messages = getStorageItem<ContactMessage[]>('contact_messages', initialContactMessages);
+    const msg = messages.find((m) => m.id === id);
+    if (msg) {
+      if (msg.status === 'unread') {
+        msg.status = 'read';
+        setStorageItem('contact_messages', messages);
+      }
+      return msg;
+    }
+    return null;
+  },
+
+  async deleteContactMessage(id: string): Promise<void> {
+    const messages = getStorageItem<ContactMessage[]>('contact_messages', initialContactMessages);
+    setStorageItem('contact_messages', messages.filter((m) => m.id !== id));
+  },
+
+  // FAQ
+  async getFaqs(): Promise<FaqItem[]> {
+    return getStorageItem<FaqItem[]>('faqs', initialFaqs);
+  },
+
+  async saveFaq(faq: Partial<FaqItem> & { question: string; answer: string }): Promise<FaqItem> {
+    const faqs = getStorageItem<FaqItem[]>('faqs', initialFaqs);
+    let item: FaqItem;
+
+    if (faq.id) {
+      const idx = faqs.findIndex((f) => f.id === faq.id);
+      if (idx !== -1) {
+        item = {
+          ...faqs[idx],
+          ...faq,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        } as FaqItem;
+        faqs[idx] = item;
+      } else {
+        item = faq as FaqItem;
+      }
+    } else {
+      item = {
+        id: `faq-${Date.now()}`,
+        question: faq.question.trim(),
+        answer: faq.answer.trim(),
+        status: faq.status || 'active',
+        category: faq.category || 'Général',
+        createdAt: new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+      faqs.unshift(item);
+    }
+    setStorageItem('faqs', faqs);
+    return item;
+  },
+
+  async toggleFaqStatus(id: string): Promise<FaqItem | null> {
+    const faqs = getStorageItem<FaqItem[]>('faqs', initialFaqs);
+    const faq = faqs.find((f) => f.id === id);
+    if (faq) {
+      faq.status = faq.status === 'active' ? 'inactive' : 'active';
+      faq.updatedAt = new Date().toISOString().slice(0, 10);
+      setStorageItem('faqs', faqs);
+      return faq;
+    }
+    return null;
+  },
+
+  async deleteFaq(id: string): Promise<void> {
+    const faqs = getStorageItem<FaqItem[]>('faqs', initialFaqs);
+    setStorageItem('faqs', faqs.filter((f) => f.id !== id));
+  },
+
+  // ACTIVITÉS
+  async getActivities(): Promise<ActivityItem[]> {
+    return getStorageItem<ActivityItem[]>('activities', initialActivities);
+  },
+
+  async saveActivity(activity: Partial<ActivityItem> & { title: string; description: string }): Promise<ActivityItem> {
+    const activities = getStorageItem<ActivityItem[]>('activities', initialActivities);
+    let item: ActivityItem;
+
+    const images = activity.images && activity.images.length > 0
+      ? activity.images
+      : activity.image
+      ? [activity.image]
+      : [];
+
+    if (activity.id) {
+      const idx = activities.findIndex((a) => a.id === activity.id);
+      if (idx !== -1) {
+        item = {
+          ...activities[idx],
+          ...activity,
+          image: images[0] || '',
+          images,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        } as ActivityItem;
+        activities[idx] = item;
+      } else {
+        item = activity as ActivityItem;
+      }
+    } else {
+      item = {
+        id: `act-${Date.now()}`,
+        title: activity.title.trim(),
+        category: activity.category || 'Ateliers & Événements',
+        description: activity.description.trim(),
+        status: activity.status || 'active',
+        image: images[0] || '',
+        images,
+        date: activity.date || 'Toute l’année',
+        location: activity.location || 'Bruxelles',
+        createdAt: new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+      activities.unshift(item);
+    }
+    setStorageItem('activities', activities);
+    return item;
+  },
+
+  async toggleActivityStatus(id: string): Promise<ActivityItem | null> {
+    const activities = getStorageItem<ActivityItem[]>('activities', initialActivities);
+    const activity = activities.find((a) => a.id === id);
+    if (activity) {
+      activity.status = activity.status === 'active' ? 'inactive' : 'active';
+      activity.updatedAt = new Date().toISOString().slice(0, 10);
+      setStorageItem('activities', activities);
+      return activity;
+    }
+    return null;
+  },
+
+  async deleteActivity(id: string): Promise<void> {
+    const activities = getStorageItem<ActivityItem[]>('activities', initialActivities);
+    setStorageItem('activities', activities.filter((a) => a.id !== id));
+  },
+
+  // ACTUALITÉS
+  async getNews(): Promise<NewsItem[]> {
+    return getStorageItem<NewsItem[]>('news', initialNews);
+  },
+
+  async saveNews(newsItem: Partial<NewsItem> & { title: string; category: string; description: string }): Promise<NewsItem> {
+    const allNews = getStorageItem<NewsItem[]>('news', initialNews);
+    let item: NewsItem;
+
+    const images = newsItem.images && newsItem.images.length > 0
+      ? newsItem.images
+      : newsItem.image
+      ? [newsItem.image]
+      : [];
+
+    if (newsItem.id) {
+      const idx = allNews.findIndex((n) => n.id === newsItem.id);
+      if (idx !== -1) {
+        item = {
+          ...allNews[idx],
+          ...newsItem,
+          image: images[0] || '',
+          images,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        } as NewsItem;
+        allNews[idx] = item;
+      } else {
+        item = newsItem as NewsItem;
+      }
+    } else {
+      item = {
+        id: `news-${Date.now()}`,
+        title: newsItem.title.trim(),
+        category: newsItem.category || 'Vie de l’ASBL',
+        description: newsItem.description.trim(),
+        status: newsItem.status || 'active',
+        image: images[0] || '',
+        images,
+        createdAt: new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+      allNews.unshift(item);
+    }
+    setStorageItem('news', allNews);
+    return item;
+  },
+
+  async toggleNewsStatus(id: string): Promise<NewsItem | null> {
+    const allNews = getStorageItem<NewsItem[]>('news', initialNews);
+    const item = allNews.find((n) => n.id === id);
+    if (item) {
+      item.status = item.status === 'active' ? 'inactive' : 'active';
+      item.updatedAt = new Date().toISOString().slice(0, 10);
+      setStorageItem('news', allNews);
+      return item;
+    }
+    return null;
+  },
+
+  async deleteNews(id: string): Promise<void> {
+    const allNews = getStorageItem<NewsItem[]>('news', initialNews);
+    setStorageItem('news', allNews.filter((n) => n.id !== id));
+  },
+
+  // PRESSE
+  async getPressItems(): Promise<PressItem[]> {
+    return getStorageItem<PressItem[]>('press_items', initialPressItems);
+  },
+
+  async savePressItem(pressItem: Partial<PressItem> & { title: string }): Promise<PressItem> {
+    const allPress = getStorageItem<PressItem[]>('press_items', initialPressItems);
+    let item: PressItem;
+
+    if (pressItem.id) {
+      const idx = allPress.findIndex((p) => p.id === pressItem.id);
+      if (idx !== -1) {
+        item = {
+          ...allPress[idx],
+          ...pressItem,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        } as PressItem;
+        allPress[idx] = item;
+      } else {
+        item = pressItem as PressItem;
+      }
+    } else {
+      item = {
+        id: `press-${Date.now()}`,
+        title: pressItem.title.trim(),
+        description: (pressItem.description || '').trim(),
+        link: pressItem.link?.trim() || '',
+        image: pressItem.image || '',
+        source: pressItem.source || 'Presse & Médias',
+        status: pressItem.status || 'active',
+        createdAt: new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+      allPress.unshift(item);
+    }
+    setStorageItem('press_items', allPress);
+    return item;
+  },
+
+  async togglePressItemStatus(id: string): Promise<PressItem | null> {
+    const allPress = getStorageItem<PressItem[]>('press_items', initialPressItems);
+    const item = allPress.find((p) => p.id === id);
+    if (item) {
+      item.status = item.status === 'active' ? 'inactive' : 'active';
+      item.updatedAt = new Date().toISOString().slice(0, 10);
+      setStorageItem('press_items', allPress);
+      return item;
+    }
+    return null;
+  },
+
+  async deletePressItem(id: string): Promise<void> {
+    const allPress = getStorageItem<PressItem[]>('press_items', initialPressItems);
+    setStorageItem('press_items', allPress.filter((p) => p.id !== id));
+  },
+
+  // PARTENAIRES
+  async getPartners(): Promise<PartnerItem[]> {
+    return getStorageItem<PartnerItem[]>('partners', initialPartners);
+  },
+
+  async savePartner(partnerData: Partial<PartnerItem> & { name: string }): Promise<PartnerItem> {
+    const allPartners = getStorageItem<PartnerItem[]>('partners', initialPartners);
+    let item: PartnerItem;
+
+    if (partnerData.id) {
+      const idx = allPartners.findIndex((p) => p.id === partnerData.id);
+      if (idx !== -1) {
+        item = {
+          ...allPartners[idx],
+          ...partnerData,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        } as PartnerItem;
+        allPartners[idx] = item;
+      } else {
+        item = partnerData as PartnerItem;
+      }
+    } else {
+      item = {
+        id: `part-${Date.now()}`,
+        name: partnerData.name.trim(),
+        logo: partnerData.logo || '',
+        status: partnerData.status || 'active',
+        createdAt: new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+      allPartners.unshift(item);
+    }
+    setStorageItem('partners', allPartners);
+    return item;
+  },
+
+  async togglePartnerStatus(id: string): Promise<PartnerItem | null> {
+    const allPartners = getStorageItem<PartnerItem[]>('partners', initialPartners);
+    const item = allPartners.find((p) => p.id === id);
+    if (item) {
+      item.status = item.status === 'active' ? 'inactive' : 'active';
+      item.updatedAt = new Date().toISOString().slice(0, 10);
+      setStorageItem('partners', allPartners);
+      return item;
+    }
+    return null;
+  },
+
+  async deletePartner(id: string): Promise<void> {
+    const allPartners = getStorageItem<PartnerItem[]>('partners', initialPartners);
+    setStorageItem('partners', allPartners.filter((p) => p.id !== id));
+  },
+
+  // CATÉGORIES DE PRODUITS
+  async getCategories(): Promise<CategoryItem[]> {
+    return getStorageItem<CategoryItem[]>('product_categories', initialCategories);
+  },
+
+  async saveCategory(categoryData: Partial<CategoryItem> & { title: string }): Promise<CategoryItem> {
+    const allCategories = getStorageItem<CategoryItem[]>('product_categories', initialCategories);
+    let item: CategoryItem;
+
+    if (categoryData.id) {
+      const idx = allCategories.findIndex((c) => c.id === categoryData.id);
+      if (idx !== -1) {
+        item = {
+          ...allCategories[idx],
+          ...categoryData,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        } as CategoryItem;
+        allCategories[idx] = item;
+      } else {
+        item = categoryData as CategoryItem;
+      }
+    } else {
+      item = {
+        id: `cat-${Date.now()}`,
+        title: categoryData.title.trim(),
+        description: (categoryData.description || '').trim(),
+        image: categoryData.image || '',
+        status: categoryData.status || 'active',
+        createdAt: new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+      allCategories.unshift(item);
+    }
+    setStorageItem('product_categories', allCategories);
+    return item;
+  },
+
+  async toggleCategoryStatus(id: string): Promise<CategoryItem | null> {
+    const allCategories = getStorageItem<CategoryItem[]>('product_categories', initialCategories);
+    const item = allCategories.find((c) => c.id === id);
+    if (item) {
+      item.status = item.status === 'active' ? 'inactive' : 'active';
+      item.updatedAt = new Date().toISOString().slice(0, 10);
+      setStorageItem('product_categories', allCategories);
+      return item;
+    }
+    return null;
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    const allCategories = getStorageItem<CategoryItem[]>('product_categories', initialCategories);
+    setStorageItem('product_categories', allCategories.filter((c) => c.id !== id));
+  },
+
+  // PARCOURS
+  async getParcours(): Promise<ParcoursItem[]> {
+    return getStorageItem<ParcoursItem[]>('parcours', initialParcours);
+  },
+
+  async saveParcours(parcoursData: Partial<ParcoursItem> & { title: string }): Promise<ParcoursItem> {
+    const allParcours = getStorageItem<ParcoursItem[]>('parcours', initialParcours);
+    let item: ParcoursItem;
+
+    if (parcoursData.id) {
+      const idx = allParcours.findIndex((p) => p.id === parcoursData.id);
+      if (idx !== -1) {
+        item = {
+          ...allParcours[idx],
+          ...parcoursData,
+          updatedAt: new Date().toISOString().slice(0, 10),
+        } as ParcoursItem;
+        allParcours[idx] = item;
+      } else {
+        item = parcoursData as ParcoursItem;
+      }
+    } else {
+      item = {
+        id: `parc-${Date.now()}`,
+        title: parcoursData.title.trim(),
+        description: (parcoursData.description || '').trim(),
+        period: (parcoursData.period || '').trim(),
+        status: parcoursData.status || 'active',
+        createdAt: new Date().toISOString().slice(0, 10),
+        updatedAt: new Date().toISOString().slice(0, 10),
+      };
+      allParcours.unshift(item);
+    }
+    setStorageItem('parcours', allParcours);
+    return item;
+  },
+
+  async toggleParcoursStatus(id: string): Promise<ParcoursItem | null> {
+    const allParcours = getStorageItem<ParcoursItem[]>('parcours', initialParcours);
+    const item = allParcours.find((p) => p.id === id);
+    if (item) {
+      item.status = item.status === 'active' ? 'inactive' : 'active';
+      item.updatedAt = new Date().toISOString().slice(0, 10);
+      setStorageItem('parcours', allParcours);
+      return item;
+    }
+    return null;
+  },
+
+  async deleteParcours(id: string): Promise<void> {
+    const allParcours = getStorageItem<ParcoursItem[]>('parcours', initialParcours);
+    setStorageItem('parcours', allParcours.filter((p) => p.id !== id));
+  },
+
+  // PAIEMENTS (CONSULTATION SEULE)
+  async getPayments(): Promise<PaymentRecord[]> {
+    return getStorageItem<PaymentRecord[]>('payments_records', initialPayments);
+  },
+
+  async getPaymentById(id: string): Promise<PaymentRecord | null> {
+    const allPayments = getStorageItem<PaymentRecord[]>('payments_records', initialPayments);
+    return allPayments.find((p) => p.id === id || p.reference === id) || null;
   },
 
   // UTILISATEURS & PERMISSIONS

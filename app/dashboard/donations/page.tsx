@@ -334,7 +334,7 @@ export default function DonationsPage() {
             <p className="font-semibold text-slate-700">Aucun don répertorié avec ces critères</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 -my-6">
+          <div className="overflow-x-auto -mx-6 -mt-6 mb-0">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
@@ -447,13 +447,15 @@ export default function DonationsPage() {
           </div>
         )}
 
-        <Pagination
-          currentPage={currentPage}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
+        <div className="mt-6 pt-2">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
+        </div>
       </div>
     </div>
   );

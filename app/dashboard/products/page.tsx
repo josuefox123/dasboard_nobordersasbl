@@ -27,6 +27,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import { BatchActionBar } from '@/components/ui/BatchActionBar';
+import { DeleteConfirmModal } from '@/components/ui/DeleteConfirmModal';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -45,6 +46,10 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
   const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState<{ id?: string; name: string; isBulk?: boolean } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     loadProducts();
@@ -188,13 +193,8 @@ export default function ProductsPage() {
     }
   };
 
-  const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le produit "${name}" ?`)) {
-      await apiClient.deleteProduct(id);
-      await loadProducts();
-      setFeedbackMsg(`Produit "${name}" supprimé.`);
-      setTimeout(() => setFeedbackMsg(null), 3000);
-    }
+  const handleDelete = (id: string, name: string) => {
+    setDeleteTarget({ id, name });
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -262,15 +262,33 @@ export default function ProductsPage() {
     }
   };
 
-  const handleBulkDelete = async () => {
-    if (confirm(`Confirmez-vous la suppression de ${selectedIds.length} produit(s) ?`)) {
-      for (const id of selectedIds) {
-        await apiClient.deleteProduct(id);
+  const handleBulkDelete = () => {
+    setDeleteTarget({ isBulk: true, name: `${selectedIds.length} produit(s)` });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setIsDeleting(true);
+      if (deleteTarget.isBulk) {
+        for (const id of selectedIds) {
+          await apiClient.deleteProduct(id);
+        }
+        await loadProducts();
+        setSelectedIds([]);
+        setFeedbackMsg(`${deleteTarget.name} supprimé(s).`);
+      } else if (deleteTarget.id) {
+        await apiClient.deleteProduct(deleteTarget.id);
+        await loadProducts();
+        setSelectedIds((prev) => prev.filter((i) => i !== deleteTarget.id));
+        setFeedbackMsg(`Produit "${deleteTarget.name}" supprimé.`);
       }
-      await loadProducts();
-      setSelectedIds([]);
-      setFeedbackMsg(`${selectedIds.length} produit(s) supprimé(s).`);
       setTimeout(() => setFeedbackMsg(null), 3000);
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -438,7 +456,7 @@ export default function ProductsPage() {
             <p className="text-xs text-slate-400 mt-1">Modifiez vos filtres ou effectuez une autre recherche.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 -my-6">
+          <div className="overflow-x-auto -mx-6 -mt-6 mb-0">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
@@ -595,13 +613,15 @@ export default function ProductsPage() {
           </div>
         )}
 
-        <Pagination
-          currentPage={currentPage}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
+        <div className="mt-6 pt-2">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
+        </div>
       </div>
 
       {/* Add / Edit Product Modal */}
@@ -901,6 +921,21 @@ export default function ProductsPage() {
           </form>
         )}
       </Modal>
+
+      {/* Modal Confirmation de Suppression */}
+      <DeleteConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        loading={isDeleting}
+        title={deleteTarget?.isBulk ? 'Supprimer les produits' : 'Supprimer le produit'}
+        message={
+          deleteTarget?.isBulk
+            ? `Supprimer définitivement ces ${deleteTarget.name} ?`
+            : 'Supprimer définitivement ce produit ?'
+        }
+        submessage="Cette action est irréversible."
+      />
     </div>
   );
 }

@@ -60,9 +60,6 @@ export const Modal: React.FC<ModalProps> = ({
         className={`relative w-full ${widthClasses} bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(11,60,104,0.35)] border border-slate-100 flex flex-col max-h-[90vh] animate-modal-pop overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Liseré supérieur bleu/jaune No Borders ASBL */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-[#0B3C68] via-[#2563EB] to-[#F59E0B] shrink-0" />
-
         {/* En-tête fixe */}
         <div className="shrink-0 flex items-start justify-between px-6 pt-5 pb-4 sm:px-8 sm:pt-6 sm:pb-5 border-b border-slate-100 bg-white">
           <div className="pr-4">

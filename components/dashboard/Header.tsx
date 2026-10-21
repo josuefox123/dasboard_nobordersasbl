@@ -23,10 +23,19 @@ interface AlertItem {
 
 const scopes = [
   { value: '/dashboard/products', label: 'Produits' },
+  { value: '/dashboard/categories', label: 'Catégories' },
   { value: '/dashboard/orders', label: 'Commandes' },
+  { value: '/dashboard/payments', label: 'Paiements' },
   { value: '/dashboard/customers', label: 'Clients' },
   { value: '/dashboard/donations', label: 'Dons' },
   { value: '/dashboard/contents', label: 'Contenus' },
+  { value: '/dashboard/activities', label: 'Activités' },
+  { value: '/dashboard/news', label: 'Actualités' },
+  { value: '/dashboard/press', label: 'Presse' },
+  { value: '/dashboard/partners', label: 'Partenaires' },
+  { value: '/dashboard/parcours', label: 'Parcours' },
+  { value: '/dashboard/contacts', label: 'Messages' },
+  { value: '/dashboard/faqs', label: 'FAQ' },
 ];
 
 export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = false, onToggleCollapse }) => {
@@ -99,28 +108,29 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-[#F7F8FA]/85 backdrop-blur-md px-4 sm:px-8 py-4 flex items-center justify-between gap-4 border-b border-slate-200/50">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
-        <button
-          type="button"
-          onClick={onToggleSidebar}
-          className="lg:hidden p-2 rounded-xl bg-white text-slate-700 border border-slate-200/70 shadow-xs hover:bg-slate-50 transition-colors"
-          aria-label="Ouvrir le menu"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-
-        {onToggleCollapse && (
+    <header className="sticky top-0 z-30 bg-[#F7F8FA]/85 backdrop-blur-md border-b border-slate-200/50">
+      <div className="w-full max-w-[1400px] mx-auto px-4 sm:px-8 py-4 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           <button
             type="button"
-            onClick={onToggleCollapse}
-            className="hidden lg:flex p-2 rounded-xl bg-white text-slate-600 border border-slate-200/70 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition-colors"
-            title={isCollapsed ? 'Agrandir le menu latéral' : 'Réduire le menu latéral'}
-            aria-label={isCollapsed ? 'Agrandir le menu latéral' : 'Réduire le menu latéral'}
+            onClick={onToggleSidebar}
+            className="lg:hidden inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white text-slate-700 border border-slate-200/70 shadow-xs hover:bg-slate-50 transition-colors shrink-0"
+            aria-label="Ouvrir le menu"
           >
-            {isCollapsed ? <PanelLeftOpen className="w-4.5 h-4.5" /> : <PanelLeftClose className="w-4.5 h-4.5" />}
+            <Menu className="w-5 h-5" />
           </button>
-        )}
+
+          {onToggleCollapse && (
+            <button
+              type="button"
+              onClick={onToggleCollapse}
+              className="hidden lg:inline-flex items-center justify-center w-10 h-10 rounded-xl bg-white text-slate-600 border border-slate-200/70 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition-colors shrink-0"
+              title={isCollapsed ? 'Agrandir le menu latéral' : 'Réduire le menu latéral'}
+              aria-label={isCollapsed ? 'Agrandir le menu latéral' : 'Réduire le menu latéral'}
+            >
+              {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+            </button>
+          )}
 
         <form
           onSubmit={handleSearch}
@@ -249,6 +259,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
           </div>
         </Link>
       </div>
-    </header>
-  );
+    </div>
+  </header>
+);
 };

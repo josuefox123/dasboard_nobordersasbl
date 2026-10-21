@@ -287,7 +287,7 @@ export default function OrdersPage() {
             <p className="font-semibold text-slate-700">Aucune commande trouvée</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 -my-6">
+          <div className="overflow-x-auto -mx-6 -mt-6 mb-0">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
@@ -403,21 +403,21 @@ export default function OrdersPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleOpenDetail(order)}
-                            className="px-2.5 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors font-medium flex items-center gap-1"
+                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
                             title="Voir le détail et statut"
+                            aria-label={`Détails de la commande ${order.orderNumber}`}
                           >
-                            <Eye className="w-3.5 h-3.5" />
-                            <span>Détails</span>
+                            <Eye className="w-4 h-4" />
                           </button>
 
                           {order.paymentStatus === 'paid' && (
                             <button
                               onClick={() => handleOpenRefund(order)}
-                              className="px-2.5 py-1 text-rose-700 hover:bg-rose-50 rounded-lg border border-rose-200 transition-colors font-medium flex items-center gap-1"
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
                               title="Effectuer un remboursement"
+                              aria-label={`Rembourser la commande ${order.orderNumber}`}
                             >
-                              <RotateCcw className="w-3.5 h-3.5" />
-                              <span>Rembourser</span>
+                              <RotateCcw className="w-4 h-4" />
                             </button>
                           )}
                         </div>
@@ -430,13 +430,15 @@ export default function OrdersPage() {
           </div>
         )}
 
-        <Pagination
-          currentPage={currentPage}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
+        <div className="mt-6 pt-2">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
+        </div>
       </div>
 
       {/* Order Detail Modal */}

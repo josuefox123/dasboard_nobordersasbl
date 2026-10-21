@@ -86,6 +86,110 @@ export interface ContentItem {
   content?: string;
 }
 
+export interface ContactMessage {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+  status: 'unread' | 'read' | 'replied';
+}
+
+export interface FaqItem {
+  id: string;
+  question: string;
+  answer: string;
+  status: 'active' | 'inactive';
+  category?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ActivityItem {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  status: 'active' | 'inactive';
+  image?: string;
+  images?: string[];
+  date?: string;
+  location?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface NewsItem {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  status: 'active' | 'inactive';
+  image?: string;
+  images?: string[];
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PressItem {
+  id: string;
+  title: string;
+  description: string;
+  link?: string;
+  image?: string;
+  status: 'active' | 'inactive';
+  source?: string;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PartnerItem {
+  id: string;
+  name: string;
+  logo: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface CategoryItem {
+  id: string;
+  title: string;
+  description: string;
+  image?: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface ParcoursItem {
+  id: string;
+  title: string;
+  description: string;
+  period: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PaymentRecord {
+  id: string;
+  reference: string;
+  customerName: string;
+  customerEmail?: string;
+  service: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  paymentMethod: 'bancontact' | 'stripe' | 'bank_transfer';
+  paymentDate: string;
+  transactionId?: string;
+  orderNumber?: string;
+  createdAt: string;
+}
+
 export type UserRole = 'super_admin' | 'manager' | 'editor' | 'treasurer';
 
 export interface DashboardUser {

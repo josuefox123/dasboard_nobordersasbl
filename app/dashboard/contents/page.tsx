@@ -25,6 +25,7 @@ import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import { BatchActionBar } from '@/components/ui/BatchActionBar';
+import { DeleteConfirmModal } from '@/components/ui/DeleteConfirmModal';
 
 export default function ContentsPage() {
   const [contents, setContents] = useState<ContentItem[]>([]);
@@ -37,6 +38,8 @@ export default function ContentsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<{ id?: string; title: string; isBulk?: boolean } | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Modal State & Images
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -181,14 +184,8 @@ export default function ContentsPage() {
     }
   };
 
-  const handleDelete = async (id: string, title: string) => {
-    if (confirm(`Confirmez-vous la suppression de "${title}" ?`)) {
-      await apiClient.deleteContent(id);
-      await loadContents();
-      setSelectedIds((prev) => prev.filter((i) => i !== id));
-      setNotice(`Contenu "${title}" supprimé.`);
-      setTimeout(() => setNotice(null), 3000);
-    }
+  const handleDelete = (id: string, title: string) => {
+    setDeleteTarget({ id, title });
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -264,15 +261,35 @@ export default function ContentsPage() {
     setTimeout(() => setNotice(null), 3000);
   };
 
-  const handleBulkDelete = async () => {
-    if (!confirm(`Supprimer les ${selectedIds.length} contenus sélectionnés ?`)) return;
-    for (const id of selectedIds) {
-      await apiClient.deleteContent(id);
+  const handleBulkDelete = () => {
+    setDeleteTarget({ isBulk: true, title: `${selectedIds.length} contenu(s)` });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      setIsDeleting(true);
+      if (deleteTarget.isBulk) {
+        for (const id of selectedIds) {
+          await apiClient.deleteContent(id);
+        }
+        await loadContents();
+        setNotice(`${selectedIds.length} contenu(s) supprimé(s).`);
+        setSelectedIds([]);
+        setTimeout(() => setNotice(null), 3000);
+      } else if (deleteTarget.id) {
+        await apiClient.deleteContent(deleteTarget.id);
+        await loadContents();
+        setSelectedIds((prev) => prev.filter((i) => i !== deleteTarget.id));
+        setNotice(`Contenu "${deleteTarget.title}" supprimé.`);
+        setTimeout(() => setNotice(null), 3000);
+      }
+      setDeleteTarget(null);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsDeleting(false);
     }
-    await loadContents();
-    setNotice(`${selectedIds.length} contenu(s) supprimé(s).`);
-    setSelectedIds([]);
-    setTimeout(() => setNotice(null), 3000);
   };
 
   return (
@@ -392,7 +409,7 @@ export default function ContentsPage() {
             <p className="font-semibold text-slate-700">Aucun contenu trouvé</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 -my-6">
+          <div className="overflow-x-auto -mx-6 -mt-6 mb-0">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
@@ -538,13 +555,15 @@ export default function ContentsPage() {
           </div>
         )}
 
-        <Pagination
-          currentPage={currentPage}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
+        <div className="mt-6 pt-2">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
+        </div>
       </div>
 
       {/* Modal Add / Edit Content */}
@@ -800,6 +819,21 @@ export default function ContentsPage() {
           </form>
         )}
       </Modal>
+
+      {/* Modal Confirmation de Suppression */}
+      <DeleteConfirmModal
+        isOpen={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleConfirmDelete}
+        loading={isDeleting}
+        title={deleteTarget?.isBulk ? 'Supprimer les contenus' : 'Supprimer le contenu'}
+        message={
+          deleteTarget?.isBulk
+            ? `Supprimer définitivement ces ${deleteTarget.title} ?`
+            : `Supprimer définitivement ce contenu ?`
+        }
+        submessage="Cette action est irréversible."
+      />
     </div>
   );
 }

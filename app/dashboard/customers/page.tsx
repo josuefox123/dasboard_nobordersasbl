@@ -203,7 +203,7 @@ export default function CustomersPage() {
             <p className="font-semibold text-slate-700">Aucun client trouvé</p>
           </div>
         ) : (
-          <div className="overflow-x-auto -mx-6 -my-6">
+          <div className="overflow-x-auto -mx-6 -mt-6 mb-0">
             <table className="w-full text-left text-xs">
               <thead className="bg-slate-50/80 text-slate-600 font-bold border-b border-slate-100">
                 <tr>
@@ -317,10 +317,11 @@ export default function CustomersPage() {
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <button
                           onClick={() => setSelectedCustomer(cust)}
-                          className="px-2.5 py-1 text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-lg border border-slate-200 transition-colors font-medium inline-flex items-center gap-1"
+                          className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Consulter la fiche client"
+                          aria-label={`Fiche de ${cust.name}`}
                         >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>Fiche</span>
+                          <Eye className="w-4 h-4" />
                         </button>
                       </td>
                     </tr>
@@ -331,13 +332,15 @@ export default function CustomersPage() {
           </div>
         )}
 
-        <Pagination
-          currentPage={currentPage}
-          totalItems={totalItems}
-          itemsPerPage={itemsPerPage}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={setItemsPerPage}
-        />
+        <div className="mt-6 pt-2">
+          <Pagination
+            currentPage={currentPage}
+            totalItems={totalItems}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={setItemsPerPage}
+          />
+        </div>
       </div>
 
       {/* Customer Detail Modal */}
