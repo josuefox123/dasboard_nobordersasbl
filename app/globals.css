@@ -35,7 +35,7 @@
 @layer components {
   /* Panel / Card de base */
   .panel {
-    @apply bg-white rounded-2xl p-6 sm:p-7 border border-slate-100 shadow-sm;
+    @apply bg-white rounded-xl p-6 sm:p-7 border border-slate-100/80 shadow-sm;
   }
 
   /* Form controls */

@@ -175,7 +175,7 @@ export default function ContactsPage() {
   const unreadCount = messages.filter((m) => m.status === 'unread').length;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pt-6">
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

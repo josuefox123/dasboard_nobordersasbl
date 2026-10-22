@@ -108,7 +108,7 @@ export default function ProfilePage() {
 
   if (loading || !user) {
     return (
-      <div className="space-y-6 animate-fade-in max-w-5xl">
+      <div className="space-y-6 animate-fade-in pt-6 max-w-5xl">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-44 w-full rounded-2xl" />
         <Skeleton className="h-96 w-full rounded-2xl" />
@@ -117,7 +117,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl">
+    <div className="space-y-6 animate-fade-in pt-6 max-w-5xl">
       {/* Breadcrumb & Titre */}
       <div>
         <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mb-1">

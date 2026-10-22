@@ -54,7 +54,7 @@ export default function SettingsPage() {
 
   if (loading || !settings) {
     return (
-      <div className="space-y-6 animate-fade-in max-w-5xl">
+      <div className="space-y-6 animate-fade-in pt-6 max-w-5xl">
         <Skeleton className="h-8 w-64" />
         <div className="flex gap-2">
           <Skeleton className="h-10 w-36 rounded-2xl" />
@@ -106,7 +106,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-5xl">
+    <div className="space-y-6 animate-fade-in pt-6 max-w-5xl">
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -112,7 +112,7 @@ export default function CustomersPage() {
   const avgBasket = customers.length > 0 ? Math.round(totalSpentAll / customers.length) : 0;
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 animate-fade-in pt-6">
       {/* Title */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

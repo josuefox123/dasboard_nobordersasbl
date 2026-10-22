@@ -38,7 +38,7 @@ export default function DashboardLayout({
 
       <div
         className={`flex flex-col min-h-screen transition-[padding] duration-300 ease-in-out ${
-          isCollapsed ? 'lg:pl-20' : 'lg:pl-72'
+          isCollapsed ? 'lg:pl-[70px]' : 'lg:pl-64'
         }`}
       >
         <Header
