@@ -57,7 +57,7 @@ export const Modal: React.FC<ModalProps> = ({
       onClick={onClose}
     >
       <div
-        className={`relative w-full ${widthClasses} bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(11,60,104,0.35)] border border-slate-100 flex flex-col max-h-[90vh] animate-modal-pop overflow-hidden`}
+        className={`relative w-full ${widthClasses} bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(38,185,151,0.18)] border border-slate-100 flex flex-col max-h-[90vh] animate-modal-pop overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* En-tête fixe */}

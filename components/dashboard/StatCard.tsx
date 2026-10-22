@@ -20,12 +20,12 @@ interface StatCardProps {
 
 const colorConfig = {
   blue: {
-    iconBg: 'bg-blue-50 text-[#0B3C68]',
-    pill: 'bg-blue-50 text-blue-700',
+    iconBg: 'bg-[#E8F8F5] text-[#1F6F5C]',
+    pill: 'bg-[#E8F8F5] text-[#1F6F5C]',
   },
   emerald: {
-    iconBg: 'bg-emerald-50 text-emerald-600',
-    pill: 'bg-emerald-50 text-emerald-700',
+    iconBg: 'bg-[#E8F8F5] text-[#26B997]',
+    pill: 'bg-[#E8F8F5] text-[#1F6F5C]',
   },
   yellow: {
     iconBg: 'bg-amber-50 text-amber-600',

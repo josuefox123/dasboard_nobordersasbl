@@ -127,7 +127,7 @@ export default function UsersPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold px-3.5 py-1.5 rounded-2xl bg-blue-50 text-[#0B3C68] border border-blue-200/80 shadow-xs">
+          <span className="text-xs font-bold px-3.5 py-1.5 rounded-2xl bg-[#E8F8F5] text-[#1F6F5C] border border-[#26B997]/30 shadow-xs">
             {users.length} comptes autorisés
           </span>
         </div>
@@ -141,7 +141,7 @@ export default function UsersPage() {
       )}
 
       {/* Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -201,7 +201,7 @@ export default function UsersPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner tous les utilisateurs affichés"
                     />
                   </th>
@@ -220,7 +220,7 @@ export default function UsersPage() {
                     <tr
                       key={user.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       <td className="py-4 pl-6 pr-2">
@@ -228,7 +228,7 @@ export default function UsersPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(user.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner ${user.name}`}
                         />
                       </td>
@@ -270,7 +270,7 @@ export default function UsersPage() {
                           {user.permissions.map((perm) => (
                             <span
                               key={perm}
-                              className="text-[10px] bg-blue-50 text-[#0B3C68] font-mono px-1.5 py-0.5 rounded border border-blue-100"
+                              className="text-[10px] bg-[#E8F8F5] text-[#1F6F5C] font-mono px-1.5 py-0.5 rounded border border-[#26B997]/20"
                             >
                               {perm}
                             </span>
@@ -285,7 +285,7 @@ export default function UsersPage() {
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <button
                           onClick={() => handleOpenEdit(user)}
-                          className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                           title="Modifier le rôle et le statut"
                           aria-label={`Modifier le rôle de ${user.name}`}
                         >
@@ -321,8 +321,8 @@ export default function UsersPage() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-          <div className="p-3.5 rounded-xl border border-blue-200 bg-blue-50/40">
-            <p className="font-bold text-[#0B3C68] mb-1">Super Administrateur</p>
+          <div className="p-3.5 rounded-xl border border-[#26B997]/30 bg-[#E8F8F5]/40">
+            <p className="font-bold text-[#1F6F5C] mb-1">Super Administrateur</p>
             <p className="text-[11px] text-slate-600 mb-2">Accès complet sans restriction</p>
             <ul className="list-disc list-inside text-[11px] text-slate-700 space-y-0.5">
               <li>Gestion des comptes & clés</li>

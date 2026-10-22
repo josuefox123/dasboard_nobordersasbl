@@ -107,7 +107,7 @@ export default function OverviewPage() {
             </div>
             <Link
               href="/dashboard/orders"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3C68] hover:text-blue-700 px-3 py-1.5 rounded-lg bg-blue-50/70 hover:bg-blue-50 transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1F6F5C] hover:text-[#26B997] px-3 py-1.5 rounded-lg bg-[#E8F8F5] hover:bg-[#D1F2EA] transition-colors"
             >
               Tout voir <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -167,7 +167,7 @@ export default function OverviewPage() {
             <h3 className="text-xl font-bold text-slate-900">Stocks à surveiller</h3>
             <Link
               href="/dashboard/products"
-              className="flex items-center gap-1 text-xs font-bold text-[#0B3C68] hover:text-blue-700"
+              className="flex items-center gap-1 text-xs font-bold text-[#1F6F5C] hover:text-[#26B997]"
             >
               Gérer <ArrowRight className="w-3.5 h-3.5" />
             </Link>

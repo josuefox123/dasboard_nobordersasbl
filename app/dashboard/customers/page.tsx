@@ -126,7 +126,7 @@ export default function CustomersPage() {
 
         <div className="flex items-center gap-3">
           <div className="text-xs bg-white border border-slate-200/80 px-4 py-2 rounded-2xl font-medium text-slate-700 shadow-xs">
-            Volume cumulé : <span className="font-extrabold text-[#0B3C68]">{totalSpentAll.toLocaleString('fr-BE')} €</span>
+            Volume cumulé : <span className="font-extrabold text-[#1F6F5C]">{totalSpentAll.toLocaleString('fr-BE')} €</span>
           </div>
         </div>
       </div>
@@ -143,12 +143,12 @@ export default function CustomersPage() {
         </div>
         <div className="panel p-5 card-hover">
           <p className="text-xs font-bold uppercase tracking-wider text-slate-400">Panier Moyen</p>
-          <p className="text-2xl font-black text-[#0B3C68] mt-1">{avgBasket.toLocaleString('fr-BE')} €</p>
+          <p className="text-2xl font-black text-[#1F6F5C] mt-1">{avgBasket.toLocaleString('fr-BE')} €</p>
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -217,7 +217,7 @@ export default function CustomersPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner tous les clients affichés"
                     />
                   </th>
@@ -238,7 +238,7 @@ export default function CustomersPage() {
                     <tr
                       key={cust.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       <td className="py-4 pl-6 pr-2">
@@ -246,7 +246,7 @@ export default function CustomersPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(cust.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner ${cust.name}`}
                         />
                       </td>
@@ -294,7 +294,7 @@ export default function CustomersPage() {
                         </span>
                       </td>
 
-                      <td className="py-4 px-6 font-extrabold text-[#0B3C68] text-sm whitespace-nowrap">
+                      <td className="py-4 px-6 font-extrabold text-[#1F6F5C] text-sm whitespace-nowrap">
                         {cust.totalSpent.toLocaleString('fr-BE')} €
                       </td>
 
@@ -317,7 +317,7 @@ export default function CustomersPage() {
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <button
                           onClick={() => setSelectedCustomer(cust)}
-                          className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                           title="Consulter la fiche client"
                           aria-label={`Fiche de ${cust.name}`}
                         >
@@ -354,8 +354,8 @@ export default function CustomersPage() {
         {selectedCustomer && (
           <div className="space-y-6">
             {/* Header Identity Card */}
-            <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/40 rounded-2xl border border-slate-100 flex items-center gap-4">
-              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0B3C68] to-[#2563EB] text-white font-bold text-lg flex items-center justify-center shadow-md shadow-blue-900/20 shrink-0">
+            <div className="p-5 bg-gradient-to-br from-slate-50 to-[#E8F8F5]/40 rounded-2xl border border-slate-100 flex items-center gap-4">
+              <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#26B997] to-[#1F6F5C] text-white font-bold text-lg flex items-center justify-center shadow-md shadow-[#26B997]/20 shrink-0">
                 {selectedCustomer.name.slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
@@ -375,9 +375,9 @@ export default function CustomersPage() {
                 <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Commandes passées</p>
                 <p className="text-2xl font-black text-slate-900 mt-1">{selectedCustomer.totalOrders}</p>
               </div>
-              <div className="p-4 rounded-2xl bg-blue-50/50 border border-blue-100 text-center">
-                <p className="text-[11px] font-bold uppercase tracking-wider text-[#0B3C68]">Total des achats</p>
-                <p className="text-2xl font-black text-[#0B3C68] mt-1">{selectedCustomer.totalSpent.toLocaleString('fr-BE')} €</p>
+              <div className="p-4 rounded-2xl bg-[#E8F8F5]/50 border border-[#26B997]/25 text-center">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-[#1F6F5C]">Total des achats</p>
+                <p className="text-2xl font-black text-[#1F6F5C] mt-1">{selectedCustomer.totalSpent.toLocaleString('fr-BE')} €</p>
               </div>
             </div>
 

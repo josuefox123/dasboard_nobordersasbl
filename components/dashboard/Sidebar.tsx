@@ -94,14 +94,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         aria-current={active ? 'page' : undefined}
         className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-[13px] font-semibold transition-all duration-150 ${
           active
-            ? 'bg-[#EFF6FF] text-[#0B3C68]'
+            ? 'bg-[#E8F8F5] text-[#1F6F5C]'
             : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100'
         }`}
       >
         <span
           className={`w-8 h-8 flex items-center justify-center rounded-lg shrink-0 transition-all ${
             active
-              ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+              ? 'bg-[#26B997] text-white shadow-sm shadow-emerald-900/20'
               : 'bg-transparent text-slate-400'
           }`}
         >
@@ -124,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         title={item.name}
         className={`relative group flex items-center justify-center w-10 h-10 mx-auto rounded-xl transition-all ${
           active
-            ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+            ? 'bg-[#26B997] text-white shadow-sm shadow-emerald-900/20'
             : 'text-slate-400 hover:text-slate-700 hover:bg-slate-100'
         }`}
       >
@@ -176,7 +176,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <div className="relative w-9 h-3 overflow-hidden pointer-events-none flex items-center mt-0.5">
                   <div className="absolute inset-x-0 bottom-1 h-[1px] bg-gradient-to-r from-transparent via-slate-300/60 to-transparent" />
                   <div className="bike-bottom-runner-collapsed flex items-center absolute bottom-0">
-                    <div className="h-[1.5px] w-5 bg-gradient-to-r from-transparent via-[#0B3C68] to-amber-400 opacity-80" />
+                    <div className="h-[1.5px] w-5 bg-gradient-to-r from-transparent via-[#26B997] to-amber-400 opacity-80" />
                     <div className="text-amber-400 -ml-0.5">
                       <Bike className="w-2.5 h-2.5" />
                     </div>
@@ -226,7 +226,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="relative w-full max-w-[160px] h-3.5 overflow-hidden pointer-events-none flex items-center mt-0.5">
                 <div className="absolute inset-x-0 bottom-1.5 h-[1px] bg-gradient-to-r from-transparent via-slate-200 to-transparent" />
                 <div className="bike-bottom-runner flex items-center absolute bottom-0.5">
-                  <div className="h-[1.5px] w-12 bg-gradient-to-r from-transparent via-[#0B3C68] to-amber-400 opacity-80" />
+                  <div className="h-[1.5px] w-12 bg-gradient-to-r from-transparent via-[#26B997] to-amber-400 opacity-80" />
                   <div className="text-amber-400 -ml-1">
                     <Bike className="w-3 h-3" />
                   </div>

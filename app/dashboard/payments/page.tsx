@@ -160,7 +160,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Barre de Recherche et Filtres */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -243,7 +243,7 @@ export default function PaymentsPage() {
                     >
                       {/* Colonne 1 : Référence */}
                       <td className="py-4 pl-6 pr-4 whitespace-nowrap">
-                        <span className="font-mono text-xs font-bold text-[#0B3C68] bg-blue-50/60 px-2.5 py-1 rounded-md border border-blue-100/60">
+                        <span className="font-mono text-xs font-bold text-[#1F6F5C] bg-[#E8F8F5]/80 px-2.5 py-1 rounded-md border border-[#26B997]/20">
                           {payment.reference}
                         </span>
                       </td>
@@ -271,7 +271,7 @@ export default function PaymentsPage() {
 
                       {/* Colonne 4 : Montant */}
                       <td className="py-4 px-4 font-extrabold text-slate-900 whitespace-nowrap">
-                        <span className="text-sm font-mono tracking-tight text-[#0B3C68]">
+                        <span className="text-sm font-mono tracking-tight text-[#1F6F5C]">
                           {formatAmount(payment.amount, payment.currency)}
                         </span>
                       </td>
@@ -291,7 +291,7 @@ export default function PaymentsPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenDetail(payment)}
-                          className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                          className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                           title="Consulter les détails du paiement"
                           aria-label={`Détails du paiement ${payment.reference}`}
                         >
@@ -337,7 +337,7 @@ export default function PaymentsPage() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                   Montant réglé
                 </span>
-                <span className="text-2xl font-black text-[#0B3C68] font-mono tracking-tight">
+                <span className="text-2xl font-black text-[#1F6F5C] font-mono tracking-tight">
                   {formatAmount(viewingPayment.amount, viewingPayment.currency)}
                 </span>
               </div>
@@ -408,7 +408,7 @@ export default function PaymentsPage() {
               {viewingPayment.orderNumber && (
                 <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
                   <span>Numéro de commande liée :</span>
-                  <span className="font-mono font-bold text-[#0B3C68]">
+                  <span className="font-mono font-bold text-[#1F6F5C]">
                     {viewingPayment.orderNumber}
                   </span>
                 </div>

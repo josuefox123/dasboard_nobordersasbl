@@ -66,11 +66,11 @@ export const RevenueChart: React.FC<{ data: ChartPoint[] }> = ({ data }) => {
             onClick={() => setShowSales(!showSales)}
             className={`flex items-center gap-2 px-2.5 py-1 rounded-lg border transition-all ${
               showSales
-                ? 'bg-blue-50 border-blue-200 text-[#0B3C68]'
+                ? 'bg-[#E8F8F5] border-[#26B997]/30 text-[#1F6F5C]'
                 : 'bg-slate-50 border-slate-200 text-slate-400 opacity-60'
             }`}
           >
-            <span className="w-2 h-2 rounded-full bg-[#0B3C68]" />
+            <span className="w-2 h-2 rounded-full bg-[#26B997]" />
             Ventes
           </button>
           <button
@@ -91,8 +91,8 @@ export const RevenueChart: React.FC<{ data: ChartPoint[] }> = ({ data }) => {
       <svg viewBox={`0 0 ${W} ${H}`} className="w-full h-auto mt-4" onMouseLeave={() => setHover(null)}>
         <defs>
           <linearGradient id="salesFill" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2563EB" stopOpacity={0.25} />
-            <stop offset="100%" stopColor="#2563EB" stopOpacity={0} />
+            <stop offset="0%" stopColor="#26B997" stopOpacity={0.25} />
+            <stop offset="100%" stopColor="#26B997" stopOpacity={0} />
           </linearGradient>
           <linearGradient id="donFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#F59E0B" stopOpacity={0.25} />
@@ -124,7 +124,7 @@ export const RevenueChart: React.FC<{ data: ChartPoint[] }> = ({ data }) => {
         {showSales && (
           <>
             <path d={area(salesPts)} fill="url(#salesFill)" />
-            <path d={smoothPath(salesPts)} fill="none" stroke="#1D4ED8" strokeWidth={2.5} />
+            <path d={smoothPath(salesPts)} fill="none" stroke="#26B997" strokeWidth={2.5} />
           </>
         )}
 
@@ -139,7 +139,7 @@ export const RevenueChart: React.FC<{ data: ChartPoint[] }> = ({ data }) => {
               strokeDasharray="4 4"
             />
             {showDonations && label(x(hover), donPts[hover].y, formatK(data[hover].donations), '#F59E0B')}
-            {showSales && label(x(hover), salesPts[hover].y, formatK(data[hover].sales), '#1D4ED8')}
+            {showSales && label(x(hover), salesPts[hover].y, formatK(data[hover].sales), '#26B997')}
           </g>
         )}
 

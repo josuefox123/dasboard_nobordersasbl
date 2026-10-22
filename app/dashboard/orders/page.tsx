@@ -174,14 +174,14 @@ export default function OrdersPage() {
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs font-bold px-3.5 py-1.5 rounded-2xl bg-blue-50 text-[#0B3C68] border border-blue-200/80 shadow-xs">
+          <span className="text-xs font-bold px-3.5 py-1.5 rounded-2xl bg-[#E8F8F5] text-[#1F6F5C] border border-[#26B997]/20 shadow-xs">
             Total : {orders.length} commandes
           </span>
         </div>
       </div>
 
       {actionNotice && (
-        <div className="p-3 bg-blue-50 border border-blue-200 text-[#0B3C68] rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
+        <div className="p-3 bg-[#E8F8F5] border border-[#26B997]/20 text-[#1F6F5C] rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           <span>{actionNotice}</span>
         </div>
@@ -200,7 +200,7 @@ export default function OrdersPage() {
             onClick={() => setPaymentFilter(tab.id)}
             className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
               paymentFilter === tab.id
-                ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+                ? 'bg-[#26B997] text-white shadow-sm shadow-[#26B997]/20'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
             }`}
           >
@@ -219,7 +219,7 @@ export default function OrdersPage() {
       </div>
 
       {/* Filters and Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Search */}
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
@@ -265,7 +265,7 @@ export default function OrdersPage() {
         <button
           type="button"
           onClick={handleBulkShip}
-          className="px-3 py-1.5 rounded-xl bg-blue-500/80 hover:bg-blue-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-xl bg-[#26B997] hover:bg-[#1FA887] text-white font-bold text-xs transition-colors flex items-center gap-1.5"
         >
           <Truck className="w-3.5 h-3.5" />
           <span>Marquer expédiées ({selectedIds.length})</span>
@@ -301,7 +301,7 @@ export default function OrdersPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner toutes les commandes affichées"
                     />
                   </th>
@@ -322,7 +322,7 @@ export default function OrdersPage() {
                     <tr
                       key={order.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       <td className="py-4 pl-6 pr-2">
@@ -330,7 +330,7 @@ export default function OrdersPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(order.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner la commande ${order.orderNumber}`}
                         />
                       </td>
@@ -348,7 +348,7 @@ export default function OrdersPage() {
                         <div className="space-y-0.5">
                           {order.items.map((it, idx) => (
                             <div key={idx} className="text-slate-800 line-clamp-1">
-                              <span className="font-semibold text-[#0B3C68]">{it.quantity}x</span>{' '}
+                              <span className="font-semibold text-[#1F6F5C]">{it.quantity}x</span>{' '}
                               {it.productName}
                             </div>
                           ))}
@@ -403,7 +403,7 @@ export default function OrdersPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleOpenDetail(order)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Voir le détail et statut"
                             aria-label={`Détails de la commande ${order.orderNumber}`}
                           >
@@ -452,7 +452,7 @@ export default function OrdersPage() {
         {selectedOrder && (
           <div className="space-y-6">
             {/* Customer info card */}
-            <div className="p-5 bg-gradient-to-br from-slate-50 to-blue-50/30 rounded-2xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-5 bg-gradient-to-br from-slate-50 to-[#E8F8F5]/30 rounded-2xl border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-0.5">Destinataire</p>
                 <p className="text-base font-bold text-slate-900">{selectedOrder.customerName}</p>
@@ -460,7 +460,7 @@ export default function OrdersPage() {
               </div>
               <div className="sm:text-right">
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-0.5">Méthode de livraison</p>
-                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#0B3C68] bg-white px-3 py-1 rounded-full border border-blue-100 shadow-xs">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1F6F5C] bg-white px-3 py-1 rounded-full border border-[#26B997]/25 shadow-xs">
                   <Truck className="w-3.5 h-3.5" />
                   {selectedOrder.shippingMethod === 'bpost_delivery'
                     ? 'Colis suivi bpost'
@@ -481,7 +481,7 @@ export default function OrdersPage() {
                         {it.quantity} unité{it.quantity > 1 ? 's' : ''} &times; {it.unitPrice.toLocaleString('fr-BE')} €
                       </p>
                     </div>
-                    <span className="text-base font-extrabold text-[#0B3C68]">
+                    <span className="text-base font-extrabold text-[#1F6F5C]">
                       {(it.quantity * it.unitPrice).toLocaleString('fr-BE')} €
                     </span>
                   </div>
@@ -511,7 +511,7 @@ export default function OrdersPage() {
                       onClick={() => handleUpdateShipping(st.id as ShippingStatus)}
                       className={`p-2.5 rounded-2xl border text-xs font-bold transition-all ${
                         isActive
-                          ? 'bg-[#0B3C68] border-[#0B3C68] text-white shadow-md shadow-blue-900/20'
+                          ? 'bg-[#26B997] border-[#26B997] text-white shadow-md shadow-emerald-900/20'
                           : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700 hover:bg-slate-50'
                       }`}
                     >

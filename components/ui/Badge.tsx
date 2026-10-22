@@ -15,8 +15,8 @@ export const Badge: React.FC<BadgeProps> = ({
 }) => {
   const styles = {
     primary: {
-      badge: 'bg-blue-50 text-[#0B3C68] border-blue-200/80',
-      dot: 'bg-[#0B3C68]',
+      badge: 'bg-[#E8F8F5] text-[#1F6F5C] border-[#26B997]/30',
+      dot: 'bg-[#26B997]',
     },
     secondary: {
       badge: 'bg-amber-50 text-amber-900 border-amber-200/80',

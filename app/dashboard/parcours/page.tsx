@@ -220,7 +220,7 @@ export default function ParcoursPage() {
       )}
 
       {/* Barre de Recherche et Filtres */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -309,7 +309,7 @@ export default function ParcoursPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner tous les parcours affichés"
                     />
                   </th>
@@ -330,7 +330,7 @@ export default function ParcoursPage() {
                     <tr
                       key={item.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       {/* Checkbox sélection */}
@@ -339,7 +339,7 @@ export default function ParcoursPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(item.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner ${item.title}`}
                         />
                       </td>
@@ -348,7 +348,7 @@ export default function ParcoursPage() {
                       <td className="py-4 px-4 font-semibold text-slate-900">
                         <span
                           onClick={() => handleOpenDetail(item)}
-                          className="text-sm font-bold text-slate-900 hover:text-[#0B3C68] cursor-pointer transition-colors line-clamp-1"
+                          className="text-sm font-bold text-slate-900 hover:text-[#26B997] cursor-pointer transition-colors line-clamp-1"
                           title={item.title}
                         >
                           {item.title}
@@ -372,7 +372,7 @@ export default function ParcoursPage() {
 
                       {/* Colonne 3 : Année du parcours */}
                       <td className="py-4 px-6 whitespace-nowrap">
-                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-blue-50/80 text-[#0B3C68] font-bold text-xs border border-blue-100/80">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-lg bg-[#E8F8F5] text-[#1F6F5C] font-bold text-xs border border-[#26B997]/25">
                           {item.period || '—'}
                         </span>
                       </td>
@@ -407,7 +407,7 @@ export default function ParcoursPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(item)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Consulter les détails"
                             aria-label={`Détails de ${item.title}`}
                           >
@@ -418,7 +418,7 @@ export default function ParcoursPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(item)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Modifier le parcours"
                             aria-label={`Modifier ${item.title}`}
                           >
@@ -495,12 +495,12 @@ export default function ParcoursPage() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                   Titre du parcours
                 </span>
-                <h3 className="text-base font-extrabold text-[#0B3C68]">
+                <h3 className="text-base font-extrabold text-[#1F6F5C]">
                   {viewingItem.title}
                 </h3>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 text-[#1F6F5C] font-bold text-xs shadow-xs">
                   <Calendar className="w-3.5 h-3.5 text-slate-400" />
                   <span>{viewingItem.period || 'Non spécifiée'}</span>
                 </span>
@@ -611,7 +611,7 @@ export default function ParcoursPage() {
                       key={suggestion}
                       type="button"
                       onClick={() => setEditingItem({ ...editingItem, period: suggestion })}
-                      className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-blue-50 hover:text-[#0B3C68] text-slate-600 font-mono transition-colors"
+                      className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-[#E8F8F5] hover:text-[#26B997] text-slate-600 font-mono transition-colors"
                     >
                       {suggestion}
                     </button>

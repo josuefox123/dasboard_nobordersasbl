@@ -238,7 +238,7 @@ export default function FaqsPage() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -341,7 +341,7 @@ export default function FaqsPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner toutes les FAQ affichées"
                     />
                   </th>
@@ -360,7 +360,7 @@ export default function FaqsPage() {
                     <tr
                       key={faq.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       <td className="py-4 pl-6 pr-2">
@@ -368,7 +368,7 @@ export default function FaqsPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(faq.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner FAQ ${faq.question}`}
                         />
                       </td>
@@ -417,7 +417,7 @@ export default function FaqsPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(faq)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Voir les détails"
                             aria-label="Voir les détails"
                           >
@@ -428,7 +428,7 @@ export default function FaqsPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(faq)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Modifier"
                             aria-label="Modifier"
                           >
@@ -504,7 +504,7 @@ export default function FaqsPage() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                   Catégorie
                 </span>
-                <span className="inline-block px-2.5 py-1 bg-white border border-slate-200 text-[#0B3C68] font-bold text-xs rounded-lg">
+                <span className="inline-block px-2.5 py-1 bg-white border border-slate-200 text-[#1F6F5C] font-bold text-xs rounded-lg">
                   {viewingFaq.category || 'Général'}
                 </span>
               </div>
@@ -526,8 +526,8 @@ export default function FaqsPage() {
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Question
               </label>
-              <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl">
-                <p className="font-bold text-sm text-[#0B3C68] leading-relaxed">
+              <div className="p-3.5 bg-[#E8F8F5]/50 border border-[#26B997]/25 rounded-xl">
+                <p className="font-bold text-sm text-[#1F6F5C] leading-relaxed">
                   {viewingFaq.question}
                 </p>
               </div>

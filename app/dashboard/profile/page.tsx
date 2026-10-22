@@ -125,7 +125,7 @@ export default function ProfilePage() {
             Tableau de bord
           </Link>
           <span>/</span>
-          <span className="text-[#0B3C68]">Mon Profil</span>
+          <span className="text-[#1F6F5C]">Mon Profil</span>
         </div>
         <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Mon Profil</h1>
         <p className="text-xs sm:text-sm text-slate-500">
@@ -175,7 +175,7 @@ export default function ProfilePage() {
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <h2 className="text-xl font-bold text-slate-900">{user.name}</h2>
             <div className="flex items-center justify-center sm:justify-start gap-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-50 text-[#0B3C68]">
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E8F8F5] text-[#1F6F5C]">
                 {user.roleLabel}
               </span>
               <Badge variant="success">Actif</Badge>
@@ -204,7 +204,7 @@ export default function ProfilePage() {
           onClick={() => setActiveTab('info')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all ${
             activeTab === 'info'
-              ? 'bg-white border-t border-x border-slate-200 text-[#0B3C68] shadow-xs'
+              ? 'bg-white border-t border-x border-slate-200 text-[#26B997] shadow-xs'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -217,7 +217,7 @@ export default function ProfilePage() {
           onClick={() => setActiveTab('security')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all ${
             activeTab === 'security'
-              ? 'bg-white border-t border-x border-slate-200 text-[#0B3C68] shadow-xs'
+              ? 'bg-white border-t border-x border-slate-200 text-[#26B997] shadow-xs'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -230,7 +230,7 @@ export default function ProfilePage() {
           onClick={() => setActiveTab('permissions')}
           className={`flex items-center gap-2 px-4 py-2.5 text-xs font-bold rounded-t-xl transition-all ${
             activeTab === 'permissions'
-              ? 'bg-white border-t border-x border-slate-200 text-[#0B3C68] shadow-xs'
+              ? 'bg-white border-t border-x border-slate-200 text-[#26B997] shadow-xs'
               : 'text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -431,7 +431,7 @@ export default function ProfilePage() {
             <div className="divide-y divide-slate-100">
               <div className="py-3 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#0B3C68] flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-xl bg-[#E8F8F5] text-[#1F6F5C] flex items-center justify-center shrink-0">
                     <Laptop className="w-4 h-4" />
                   </div>
                   <div>
@@ -475,7 +475,7 @@ export default function ProfilePage() {
         <div className="bg-white rounded-2xl p-6 sm:p-7 border border-slate-100 shadow-xs space-y-5 animate-fade-in">
           <div className="border-b border-slate-100 pb-3">
             <div className="flex items-center gap-2 mb-1">
-              <Shield className="w-4 h-4 text-[#0B3C68]" />
+              <Shield className="w-4 h-4 text-[#26B997]" />
               <h3 className="text-base font-bold text-slate-900">Droits et Autorisations Administrateur</h3>
             </div>
             <p className="text-xs text-slate-400">
@@ -495,7 +495,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-              <span className="w-6 h-6 rounded-lg bg-blue-100 text-[#0B3C68] flex items-center justify-center shrink-0 mt-0.5">
+              <span className="w-6 h-6 rounded-lg bg-[#E8F8F5] text-[#1F6F5C] flex items-center justify-center shrink-0 mt-0.5">
                 <FileCheck2 className="w-3.5 h-3.5" />
               </span>
               <div>
@@ -505,7 +505,7 @@ export default function ProfilePage() {
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-100 flex items-start gap-3">
-              <span className="w-6 h-6 rounded-lg bg-blue-100 text-[#0B3C68] flex items-center justify-center shrink-0 mt-0.5">
+              <span className="w-6 h-6 rounded-lg bg-[#E8F8F5] text-[#1F6F5C] flex items-center justify-center shrink-0 mt-0.5">
                 <FileCheck2 className="w-3.5 h-3.5" />
               </span>
               <div>

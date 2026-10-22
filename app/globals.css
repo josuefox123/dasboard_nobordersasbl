@@ -4,6 +4,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --primary: #26B997;
+  --primary-hover: #1FA887;
+  --primary-soft: #E8F8F5;
+  --primary-leaf: #1F6F5C;
+}
+
 @layer base {
   *, ::before, ::after {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -33,7 +40,7 @@
 
   /* Form controls */
   .input-premium {
-    @apply w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#16A34A]/25 focus:border-[#16A34A] transition-all duration-150;
+    @apply w-full px-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#26B997]/25 focus:border-[#26B997] transition-all duration-150;
   }
 
   .label-premium {
@@ -42,7 +49,7 @@
 
   /* Boutons */
   .btn-primary-gradient {
-    @apply px-5 py-2.5 text-sm font-semibold text-white bg-[#0B3C68] hover:bg-[#092C4C] rounded-xl shadow-sm transition-all active:scale-[0.98];
+    @apply px-5 py-2.5 text-sm font-semibold text-white bg-[#26B997] hover:bg-[#1FA887] rounded-xl shadow-sm transition-all active:scale-[0.98];
   }
 
   .btn-secondary-soft {
@@ -55,7 +62,7 @@
 
   /* Badge statuts */
   .badge-emerald {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E8F8F5] text-[#1F6F5C];
   }
   .badge-amber {
     @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700;
@@ -64,7 +71,7 @@
     @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700;
   }
   .badge-blue {
-    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700;
+    @apply inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#E8F8F5] text-[#1F6F5C];
   }
 }
 
@@ -167,4 +174,29 @@
 
 .sidebar-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #94A3B8;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.animate-shake {
+  animation: shake 0.35s ease-in-out;
 }

@@ -322,7 +322,7 @@ export default function ContentsPage() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -423,7 +423,7 @@ export default function ContentsPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner tous les contenus affichés"
                     />
                   </th>
@@ -445,7 +445,7 @@ export default function ContentsPage() {
                     <tr
                       key={item.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       <td className="py-4 pl-6 pr-2">
@@ -453,7 +453,7 @@ export default function ContentsPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(item.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner ${item.title}`}
                         />
                       </td>
@@ -504,7 +504,7 @@ export default function ContentsPage() {
                       </td>
 
                       <td className="py-4 px-6 whitespace-nowrap">
-                        <span className="uppercase font-bold text-[11px] px-2 py-0.5 rounded bg-blue-50 text-[#0B3C68] border border-blue-100">
+                        <span className="uppercase font-bold text-[11px] px-2 py-0.5 rounded bg-[#E8F8F5] text-[#1F6F5C] border border-[#26B997]/20">
                           {item.locale}
                         </span>
                       </td>
@@ -533,7 +533,7 @@ export default function ContentsPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleOpenEdit(item)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Modifier"
                           >
                             <Edit3 className="w-4 h-4" />
@@ -673,7 +673,7 @@ export default function ContentsPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="label-premium mb-0 flex items-center gap-1.5">
-                    <ImageIcon className="w-4 h-4 text-[#0B3C68]" />
+                    <ImageIcon className="w-4 h-4 text-[#26B997]" />
                     <span>Visuels & Photos du contenu</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
@@ -711,14 +711,14 @@ export default function ContentsPage() {
                 onClick={() => fileInputRef.current?.click()}
                 className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${
                   isDragOver
-                    ? 'border-[#0B3C68] bg-blue-50/70 scale-[1.01]'
-                    : 'border-slate-300 hover:border-[#0B3C68] bg-slate-50/70 hover:bg-slate-50'
+                    ? 'border-[#26B997] bg-[#E8F8F5]/70 scale-[1.01]'
+                    : 'border-slate-300 hover:border-[#26B997] bg-slate-50/70 hover:bg-slate-50'
                 }`}
               >
                 <div className="flex flex-col items-center justify-center gap-2">
-                  <div className="w-12 h-12 rounded-2xl bg-[#0B3C68]/10 text-[#0B3C68] flex items-center justify-center shadow-xs">
+                  <div className="w-12 h-12 rounded-2xl bg-[#E8F8F5] text-[#26B997] flex items-center justify-center shadow-xs">
                     {isUploadingFiles ? (
-                      <div className="w-5 h-5 border-2 border-[#0B3C68] border-t-transparent rounded-full animate-spin" />
+                      <div className="w-5 h-5 border-2 border-[#26B997] border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Upload className="w-5 h-5" />
                     )}
@@ -730,7 +730,7 @@ export default function ContentsPage() {
                         : 'Ajouter des photos depuis votre ordinateur (pièce jointe)'}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Glissez vos photos ici ou cliquez pour parcourir • <strong className="text-[#0B3C68]">Sélectionnez plusieurs photos à la fois</strong>
+                      Glissez vos photos ici ou cliquez pour parcourir • <strong className="text-[#1F6F5C]">Sélectionnez plusieurs photos à la fois</strong>
                     </p>
                   </div>
                   <button
@@ -739,7 +739,7 @@ export default function ContentsPage() {
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs hover:bg-slate-50 transition-colors mt-1"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-[#1F6F5C] font-bold text-xs shadow-xs hover:bg-[#E8F8F5] transition-colors mt-1"
                   >
                     <Paperclip className="w-3.5 h-3.5" />
                     <span>Choisir des fichiers sur mon PC</span>
@@ -759,7 +759,7 @@ export default function ContentsPage() {
                       <div
                         key={idx}
                         className={`relative group rounded-2xl overflow-hidden border-2 bg-slate-100 aspect-square ${
-                          idx === 0 ? 'border-[#0B3C68] shadow-sm ring-2 ring-[#0B3C68]/20' : 'border-slate-200'
+                          idx === 0 ? 'border-[#26B997] shadow-sm ring-2 ring-[#26B997]/20' : 'border-slate-200'
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -769,7 +769,7 @@ export default function ContentsPage() {
                           className="w-full h-full object-cover"
                         />
                         {idx === 0 && (
-                          <div className="absolute top-1.5 left-1.5 bg-[#0B3C68] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
+                          <div className="absolute top-1.5 left-1.5 bg-[#26B997] text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 shadow-xs">
                             <Star className="w-2.5 h-2.5 fill-amber-400 text-amber-400" />
                             <span>Couverture</span>
                           </div>

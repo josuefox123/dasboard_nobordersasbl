@@ -140,7 +140,7 @@ export default function SettingsPage() {
           onClick={() => setActiveTab('website')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
             activeTab === 'website'
-              ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+              ? 'bg-[#26B997] text-white shadow-sm shadow-emerald-900/20'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
           }`}
         >
@@ -152,7 +152,7 @@ export default function SettingsPage() {
           onClick={() => setActiveTab('shipping')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
             activeTab === 'shipping'
-              ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+              ? 'bg-[#26B997] text-white shadow-sm shadow-emerald-900/20'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
           }`}
         >
@@ -164,7 +164,7 @@ export default function SettingsPage() {
           onClick={() => setActiveTab('payments')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
             activeTab === 'payments'
-              ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+              ? 'bg-[#26B997] text-white shadow-sm shadow-emerald-900/20'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
           }`}
         >
@@ -176,7 +176,7 @@ export default function SettingsPage() {
           onClick={() => setActiveTab('notifications')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
             activeTab === 'notifications'
-              ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+              ? 'bg-[#26B997] text-white shadow-sm shadow-emerald-900/20'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
           }`}
         >
@@ -188,7 +188,7 @@ export default function SettingsPage() {
           onClick={() => setActiveTab('languages')}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-2xl text-xs font-bold transition-all whitespace-nowrap ${
             activeTab === 'languages'
-              ? 'bg-[#0B3C68] text-white shadow-sm shadow-blue-900/20'
+              ? 'bg-[#26B997] text-white shadow-sm shadow-emerald-900/20'
               : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
           }`}
         >
@@ -214,7 +214,7 @@ export default function SettingsPage() {
             {/* 1. Logo du site web */}
             <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-4">
               <div className="flex items-center gap-2">
-                <ImageIcon className="w-4 h-4 text-[#0B3C68]" />
+                <ImageIcon className="w-4 h-4 text-[#26B997]" />
                 <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">Logo du site public</h4>
               </div>
 
@@ -230,7 +230,7 @@ export default function SettingsPage() {
                       className="max-h-12 w-auto object-contain"
                     />
                   </div>
-                  <div className="p-3 rounded-xl bg-[#0B3C68] shadow-xs flex items-center justify-center min-w-[120px] h-16">
+                  <div className="p-3 rounded-xl bg-[#1F6F5C] shadow-xs flex items-center justify-center min-w-[120px] h-16">
                     <Image
                       src="/logoFichier 3logo_2_blanc.png"
                       alt="Aperçu logo blanc"
@@ -250,7 +250,7 @@ export default function SettingsPage() {
                       onClick={() => updateWebsite('logoUrl', '/logoFichier 2logo_2.png')}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
                         website.logoUrl === '/logoFichier 2logo_2.png'
-                          ? 'bg-[#0B3C68] text-white border-[#0B3C68]'
+                          ? 'bg-[#26B997] text-white border-[#26B997]'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
@@ -261,7 +261,7 @@ export default function SettingsPage() {
                       onClick={() => updateWebsite('logoUrl', '/logoFichier 3logo_2_blanc.png')}
                       className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
                         website.logoUrl === '/logoFichier 3logo_2_blanc.png'
-                          ? 'bg-[#0B3C68] text-white border-[#0B3C68]'
+                          ? 'bg-[#26B997] text-white border-[#26B997]'
                           : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-100'
                       }`}
                     >
@@ -276,7 +276,7 @@ export default function SettingsPage() {
                       placeholder="URL ou importer depuis PC (ex: /mon-logo.png ou https://...)"
                       className="input-premium text-xs flex-1"
                     />
-                    <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                    <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#1F6F5C] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
                       <Paperclip className="w-3.5 h-3.5" />
                       <span>Fichier PC</span>
                       <input
@@ -366,7 +366,7 @@ export default function SettingsPage() {
                     placeholder="https://images.unsplash.com/..."
                     className="input-premium font-mono text-xs flex-1"
                   />
-                  <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                  <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#1F6F5C] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
                     <Paperclip className="w-3.5 h-3.5" />
                     <span>Fichier PC</span>
                     <input
@@ -430,7 +430,7 @@ export default function SettingsPage() {
                         placeholder="https://..."
                         className="input-premium font-mono text-xs flex-1"
                       />
-                      <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
+                      <label className="px-3 py-2 rounded-2xl bg-white hover:bg-slate-50 border border-slate-200 text-[#1F6F5C] font-bold text-xs shadow-xs cursor-pointer flex items-center gap-1.5 shrink-0 transition-colors">
                         <Paperclip className="w-3.5 h-3.5" />
                         <span>Fichier PC</span>
                         <input

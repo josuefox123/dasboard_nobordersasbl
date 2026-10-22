@@ -216,10 +216,10 @@ export default function DonationsPage() {
           <div className="p-4 rounded-2xl bg-slate-50/80 border border-slate-100">
             <div className="flex justify-between text-xs font-bold mb-2">
               <span className="text-slate-800">Mobilité Inclusive</span>
-              <span className="text-[#0B3C68]">78%</span>
+              <span className="text-[#1F6F5C]">78%</span>
             </div>
             <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-[#0B3C68] to-[#1D4ED8] rounded-full w-[78%]" />
+              <div className="h-full bg-gradient-to-r from-[#26B997] to-[#1F6F5C] rounded-full w-[78%]" />
             </div>
             <p className="text-[11px] text-slate-400 mt-2 font-medium">Financement de tandems adaptés</p>
           </div>
@@ -247,7 +247,7 @@ export default function DonationsPage() {
       </div>
 
       {/* Filters and Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -348,7 +348,7 @@ export default function DonationsPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner tous les dons affichés"
                     />
                   </th>
@@ -369,7 +369,7 @@ export default function DonationsPage() {
                     <tr
                       key={d.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       <td className="py-4 pl-6 pr-2">
@@ -377,7 +377,7 @@ export default function DonationsPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(d.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner ${d.reference}`}
                         />
                       </td>

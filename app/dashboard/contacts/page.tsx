@@ -203,7 +203,7 @@ export default function ContactsPage() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -296,7 +296,7 @@ export default function ContactsPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner tous les messages affichés"
                     />
                   </th>
@@ -318,7 +318,7 @@ export default function ContactsPage() {
                       key={msg.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
                         isSelected
-                          ? 'bg-blue-50/40'
+                          ? 'bg-[#E8F8F5]/50'
                           : isUnread
                           ? 'bg-amber-50/20 font-medium'
                           : ''
@@ -329,7 +329,7 @@ export default function ContactsPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(msg.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner message de ${msg.name}`}
                         />
                       </td>
@@ -339,7 +339,7 @@ export default function ContactsPage() {
                           <div
                             className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
                               isUnread
-                                ? 'bg-[#0B3C68] text-white shadow-xs'
+                                ? 'bg-[#26B997] text-white shadow-xs'
                                 : 'bg-slate-100 text-slate-600'
                             }`}
                           >
@@ -366,7 +366,7 @@ export default function ContactsPage() {
                       <td className="py-4 px-6 whitespace-nowrap">
                         <a
                           href={`mailto:${msg.email}`}
-                          className="text-[#0B3C68] hover:underline font-medium"
+                          className="text-[#1F6F5C] hover:text-[#26B997] hover:underline font-medium"
                           title={`Envoyer un email à ${msg.email}`}
                         >
                           {msg.email}
@@ -396,11 +396,11 @@ export default function ContactsPage() {
                         <div className="flex items-center justify-end gap-1.5">
                           <button
                             onClick={() => handleOpenDetail(msg)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors flex items-center gap-1"
                             title="Voir les détails du message"
                             aria-label={`Voir les détails du message de ${msg.name}`}
                           >
-                            <Eye className="w-4 h-4 text-[#0B3C68]" />
+                            <Eye className="w-4 h-4 text-[#26B997]" />
                           </button>
                           <button
                             onClick={() => handleDelete(msg.id, msg.name)}
@@ -447,7 +447,7 @@ export default function ContactsPage() {
             {/* Infos Expéditeur */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#0B3C68] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+                <div className="w-11 h-11 rounded-2xl bg-[#26B997] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
                   {selectedMessage.name
                     .split(' ')
                     .map((n) => n[0])
@@ -482,8 +482,8 @@ export default function ContactsPage() {
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Motif de la demande
               </label>
-              <div className="p-3 bg-blue-50/50 border border-blue-100 rounded-xl">
-                <p className="font-bold text-sm text-[#0B3C68]">
+              <div className="p-3 bg-[#E8F8F5]/50 border border-[#26B997]/25 rounded-xl">
+                <p className="font-bold text-sm text-[#1F6F5C]">
                   {selectedMessage.subject}
                 </p>
               </div>

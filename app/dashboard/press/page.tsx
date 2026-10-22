@@ -263,7 +263,7 @@ export default function PressPage() {
       )}
 
       {/* Filter and Search Bar */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
           <input
@@ -353,7 +353,7 @@ export default function PressPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner tous les éléments affichés"
                     />
                   </th>
@@ -373,7 +373,7 @@ export default function PressPage() {
                     <tr
                       key={item.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       <td className="py-4 pl-6 pr-2">
@@ -381,7 +381,7 @@ export default function PressPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(item.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner ${item.title}`}
                         />
                       </td>
@@ -421,7 +421,7 @@ export default function PressPage() {
                               href={item.link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[11px] text-[#0B3C68] hover:underline inline-flex items-center gap-1 font-medium"
+                              className="text-[11px] text-[#1F6F5C] hover:text-[#26B997] hover:underline inline-flex items-center gap-1 font-medium"
                               title="Ouvrir le lien externe"
                             >
                               <span>Lien de publication</span>
@@ -459,7 +459,7 @@ export default function PressPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenDetail(item)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Consulter les détails"
                             aria-label="Consulter les détails"
                           >
@@ -470,7 +470,7 @@ export default function PressPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(item)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Modifier"
                             aria-label="Modifier"
                           >
@@ -546,7 +546,7 @@ export default function PressPage() {
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                   Média / Source
                 </span>
-                <span className="inline-block px-2.5 py-1 bg-white border border-slate-200 text-[#0B3C68] font-bold text-xs rounded-lg">
+                <span className="inline-block px-2.5 py-1 bg-white border border-slate-200 text-[#1F6F5C] font-bold text-xs rounded-lg">
                   {viewingItem.source || 'Presse & Médias'}
                 </span>
               </div>
@@ -568,8 +568,8 @@ export default function PressPage() {
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Titre
               </label>
-              <div className="p-3.5 bg-blue-50/50 border border-blue-100 rounded-xl">
-                <p className="font-bold text-base text-[#0B3C68]">
+              <div className="p-3.5 bg-[#E8F8F5]/50 border border-[#26B997]/25 rounded-xl">
+                <p className="font-bold text-base text-[#1F6F5C]">
                   {viewingItem.title}
                 </p>
               </div>
@@ -763,7 +763,7 @@ export default function PressPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="label-premium mb-0 flex items-center gap-1.5">
-                    <ImageIcon className="w-4 h-4 text-[#0B3C68]" />
+                    <ImageIcon className="w-4 h-4 text-[#26B997]" />
                     <span>Image associée</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
@@ -784,7 +784,7 @@ export default function PressPage() {
 
               {/* Si une image est présente */}
               {editingItem.image ? (
-                <div className="relative rounded-2xl overflow-hidden border-2 border-[#0B3C68] max-h-52 bg-slate-100 aspect-video group shadow-xs">
+                <div className="relative rounded-2xl overflow-hidden border-2 border-[#26B997] max-h-52 bg-slate-100 aspect-video group shadow-xs">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={editingItem.image}
@@ -824,14 +824,14 @@ export default function PressPage() {
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-2xl p-4 text-center cursor-pointer transition-all ${
                     isDragOver
-                      ? 'border-[#0B3C68] bg-blue-50/70 scale-[1.01]'
-                      : 'border-slate-300 hover:border-[#0B3C68] bg-slate-50/70 hover:bg-slate-50'
+                      ? 'border-[#26B997] bg-[#E8F8F5]/70 scale-[1.01]'
+                      : 'border-slate-300 hover:border-[#26B997] bg-slate-50/70 hover:bg-slate-50'
                   }`}
                 >
                   <div className="flex flex-col items-center justify-center gap-1.5">
-                    <div className="w-10 h-10 rounded-2xl bg-[#0B3C68]/10 text-[#0B3C68] flex items-center justify-center shadow-xs">
+                    <div className="w-10 h-10 rounded-2xl bg-[#E8F8F5] text-[#1F6F5C] flex items-center justify-center shadow-xs">
                       {isUploadingFiles ? (
-                        <div className="w-4 h-4 border-2 border-[#0B3C68] border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-[#26B997] border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <Upload className="w-4 h-4" />
                       )}
@@ -852,7 +852,7 @@ export default function PressPage() {
                         e.stopPropagation();
                         fileInputRef.current?.click();
                       }}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 text-[#0B3C68] font-bold text-xs shadow-xs hover:bg-slate-50 transition-colors mt-0.5"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 text-[#1F6F5C] font-bold text-xs shadow-xs hover:bg-slate-50 transition-colors mt-0.5"
                     >
                       <Paperclip className="w-3.5 h-3.5" />
                       <span>Choisir un fichier</span>

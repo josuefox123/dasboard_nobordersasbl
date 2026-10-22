@@ -134,7 +134,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
 
         <form
           onSubmit={handleSearch}
-          className="flex items-center w-full max-w-lg bg-white rounded-xl border border-slate-200/80 shadow-xs pl-3.5 pr-1.5 py-1 focus-within:border-[#0B3C68] focus-within:ring-2 focus-within:ring-[#0B3C68]/10 transition-all"
+          className="flex items-center w-full max-w-lg bg-white rounded-xl border border-slate-200/80 shadow-xs pl-3.5 pr-1.5 py-1 focus-within:border-[#26B997] focus-within:ring-2 focus-within:ring-[#26B997]/10 transition-all"
         >
           <select
             value={scope}
@@ -172,7 +172,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
           )}
           <button
             type="submit"
-            className="p-2 rounded-full text-slate-400 hover:text-[#0B3C68] hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-full text-slate-400 hover:text-[#26B997] hover:bg-slate-100 transition-colors"
             aria-label="Rechercher"
           >
             <Search className="w-4 h-4" />
@@ -214,7 +214,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
                       >
                         <span
                           className={`mt-0.5 p-1.5 rounded-lg ${
-                            a.type === 'stock' ? 'bg-amber-50 text-amber-600' : 'bg-blue-50 text-[#0B3C68]'
+                            a.type === 'stock' ? 'bg-amber-50 text-amber-600' : 'bg-[#E8F8F5] text-[#1F6F5C]'
                           }`}
                         >
                           {a.type === 'stock' ? (
@@ -241,7 +241,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
           className="flex items-center gap-3 p-1.5 -mr-1.5 rounded-xl hover:bg-white/80 transition-colors group cursor-pointer"
           title="Mon Profil"
         >
-          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-slate-100 ring-2 ring-white group-hover:ring-[#0B3C68]/20 transition-all">
+          <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-slate-100 ring-2 ring-white group-hover:ring-[#26B997]/20 transition-all">
             <Image
               src="/default-avatar.svg"
               alt="Photo de profil"
@@ -252,7 +252,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar, isCollapsed = f
             />
           </div>
           <div className="hidden sm:block leading-tight text-left">
-            <p className="text-sm font-bold text-slate-900 group-hover:text-[#0B3C68] transition-colors">
+            <p className="text-sm font-bold text-slate-900 group-hover:text-[#26B997] transition-colors">
               Josué
             </p>
             <p className="text-[11px] text-slate-500">Administrateur</p>

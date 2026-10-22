@@ -11,6 +11,22 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
+          green: {
+            50: "#E8F8F5",
+            soft: "#E8F8F5",
+            100: "#D1F2EA",
+            200: "#A3E5D5",
+            500: "#26B997",
+            hover: "#1FA887",
+            leaf: "#1F6F5C",
+            DEFAULT: "#26B997",
+          },
+          primary: {
+            DEFAULT: "#26B997",
+            hover: "#1FA887",
+            soft: "#E8F8F5",
+            leaf: "#1F6F5C",
+          },
           blue: {
             50: "#EFF6FF",
             100: "#DBEAFE",
@@ -51,11 +67,11 @@ const config: Config = {
     themes: [
       {
         noborders: {
-          primary: "#0B3C68",
+          primary: "#26B997",
           "primary-content": "#FFFFFF",
           secondary: "#F59E0B",
           "secondary-content": "#0F172A",
-          accent: "#0284C7",
+          accent: "#1F6F5C",
           "accent-content": "#FFFFFF",
           neutral: "#0F172A",
           "neutral-content": "#F8FAFC",

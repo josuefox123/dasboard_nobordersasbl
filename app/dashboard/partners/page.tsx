@@ -236,7 +236,7 @@ export default function PartnersPage() {
       )}
 
       {/* Barre de Recherche et Filtres */}
-      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(11,60,104,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -325,7 +325,7 @@ export default function PartnersPage() {
                         }
                       }}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                      className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                       aria-label="Sélectionner tous les partenaires affichés"
                     />
                   </th>
@@ -345,7 +345,7 @@ export default function PartnersPage() {
                     <tr
                       key={partner.id}
                       className={`hover:bg-slate-50/80 transition-colors ${
-                        isSelected ? 'bg-blue-50/40' : ''
+                        isSelected ? 'bg-[#E8F8F5]/50' : ''
                       }`}
                     >
                       {/* Checkbox sélection */}
@@ -354,14 +354,14 @@ export default function PartnersPage() {
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => handleToggleSelect(partner.id)}
-                          className="w-4 h-4 rounded border-slate-300 text-[#0B3C68] focus:ring-[#0B3C68] cursor-pointer"
+                          className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
                           aria-label={`Sélectionner ${partner.name}`}
                         />
                       </td>
 
                       {/* Colonne 1 : Nom du partenaire */}
                       <td className="py-4 px-4 font-semibold text-slate-900">
-                        <span className="text-sm font-bold text-slate-900 hover:text-[#0B3C68] transition-colors">
+                        <span className="text-sm font-bold text-slate-900 hover:text-[#26B997] transition-colors">
                           {partner.name}
                         </span>
                       </td>
@@ -418,7 +418,7 @@ export default function PartnersPage() {
                           <button
                             type="button"
                             onClick={() => handleOpenEdit(partner)}
-                            className="p-1.5 text-slate-600 hover:text-[#0B3C68] hover:bg-blue-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
                             title="Modifier le partenaire"
                             aria-label={`Modifier ${partner.name}`}
                           >
@@ -532,7 +532,7 @@ export default function PartnersPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <label className="label-premium mb-0 flex items-center gap-1.5">
-                    <ImageIcon className="w-4 h-4 text-[#0B3C68]" />
+                    <ImageIcon className="w-4 h-4 text-[#26B997]" />
                     <span>Logo du partenaire</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
@@ -595,7 +595,7 @@ export default function PartnersPage() {
                   onClick={() => fileInputRef.current?.click()}
                   className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors ${
                     isDragOver
-                      ? 'border-[#0B3C68] bg-blue-50/50'
+                      ? 'border-[#26B997] bg-[#E8F8F5]/50'
                       : 'border-slate-200 hover:border-slate-300 bg-slate-50/50'
                   }`}
                 >
