@@ -83,6 +83,7 @@ export interface ContentItem {
   viewsCount: number;
   image?: string;
   images?: string[];
+  video?: string;
   content?: string;
 }
 

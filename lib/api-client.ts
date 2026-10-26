@@ -227,6 +227,7 @@ export const apiClient = {
         viewsCount: 0,
         image: content.image,
         images: content.images || [],
+        video: content.video || '',
         content: content.content || '',
       };
       contents.unshift(item);
