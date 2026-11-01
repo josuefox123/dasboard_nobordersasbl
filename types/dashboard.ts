@@ -1,19 +1,27 @@
-export type ProductCategory = 'bamboo-bikes' | 'hase-bikes' | 'elliptigo' | 'accessories';
+export type ProductCategory =
+  | 'bamboo-bikes'
+  | 'hase-bikes'
+  | 'elliptigo'
+  | 'accessories'
+  | (string & {});
 
 export interface Product {
   id: string;
   name: string;
   sku: string;
+  categoryId?: string | null;
   category: ProductCategory;
   categoryLabel: string;
   price: number;
   stock: number;
   status: 'in_stock' | 'low_stock' | 'out_of_stock';
+  statut?: 'active' | 'inactive';
   isFeatured?: boolean;
   image?: string;
   images?: string[];
   description: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export type PaymentStatus = 'paid' | 'pending' | 'failed' | 'refunded';
@@ -119,18 +127,6 @@ export interface ActivityItem {
   date?: string;
   location?: string;
   createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface NewsItem {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  status: 'active' | 'inactive';
-  image?: string;
-  images?: string[];
-  createdAt: string;
   updatedAt?: string;
 }
 

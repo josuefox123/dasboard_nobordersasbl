@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   Filter,
+  Eye,
   Edit2,
   Trash2,
   AlertCircle,
@@ -19,9 +20,12 @@ import {
   Star,
   Upload,
   Paperclip,
+  CheckCircle2,
+  Power,
+  PowerOff,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { Product, ProductCategory } from '@/types/dashboard';
+import { Product, ProductCategory, CategoryItem } from '@/types/dashboard';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -31,28 +35,47 @@ import { DeleteConfirmModal } from '@/components/ui/DeleteConfirmModal';
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [stockFilter, setStockFilter] = useState<'all' | 'in_stock' | 'low_stock' | 'out_of_stock'>('all');
+  const [stockFilter, setStockFilter] = useState<
+    'all' | 'in_stock' | 'low_stock' | 'out_of_stock'
+  >('all');
 
   // Pagination & Selection
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
-  // Modal State
+  // Modal State (Edit / Create)
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
+  const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(
+    null,
+  );
   const [formErrors, setFormErrors] = useState<Record<string, string>>({});
-  const [feedbackMsg, setFeedbackMsg] = useState<string | null>(null);
+  const [modalError, setModalError] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+
+  // Detail Modal State
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   // Delete modal state
-  const [deleteTarget, setDeleteTarget] = useState<{ id?: string; name: string; isBulk?: boolean } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id?: string;
+    name: string;
+    isBulk?: boolean;
+  } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    loadProducts();
+    loadData();
   }, []);
 
   const searchParams = useSearchParams();
@@ -64,27 +87,44 @@ export default function ProductsPage() {
     }
   }, [searchParams]);
 
-  async function loadProducts() {
+  async function loadData() {
     try {
-      const data = await apiClient.getProducts();
-      setProducts(data);
+      setLoading(true);
+      const [prodsData, catsData] = await Promise.all([
+        apiClient.getProducts(),
+        apiClient.getCategories(),
+      ]);
+      setProducts(prodsData);
+      setCategories(catsData);
+    } catch (err) {
+      console.error('Erreur chargement données produits:', err);
     } finally {
       setLoading(false);
     }
   }
 
+  const showNotification = (text: string, type: 'success' | 'error' = 'success') => {
+    setFeedbackMsg({ text, type });
+    setTimeout(() => setFeedbackMsg(null), 3500);
+  };
+
   const handleOpenAdd = () => {
+    const defaultCat = categories.length > 0 ? categories[0].id : '';
     setEditingProduct({
-      category: 'bamboo-bikes',
-      price: 0,
-      stock: 1,
       name: '',
       sku: '',
+      categoryId: defaultCat,
+      category: defaultCat as ProductCategory,
+      price: 0,
+      stock: 1,
+      isFeatured: false,
+      statut: 'active',
       description: '',
       images: [],
       image: '',
     });
     setFormErrors({});
+    setModalError(null);
     setIsModalOpen(true);
   };
 
@@ -97,11 +137,21 @@ export default function ProductsPage() {
         : [];
     setEditingProduct({
       ...prod,
+      categoryId: prod.categoryId || prod.category,
       images: initialImages,
       image: initialImages[0] || '',
+      isFeatured: Boolean(prod.isFeatured),
+      statut: prod.statut || 'active',
     });
     setFormErrors({});
+    setModalError(null);
     setIsModalOpen(true);
+  };
+
+  const handleOpenView = (prod: Product) => {
+    setViewingProduct(prod);
+    setActiveImageIndex(0);
+    setIsDetailModalOpen(true);
   };
 
   // Local File Upload Handlers (Attachments)
@@ -180,7 +230,8 @@ export default function ProductsPage() {
   const handleSetPrimaryPhoto = (index: number) => {
     if (!editingProduct) return;
     const currentImages = [
-      ...(editingProduct.images || (editingProduct.image ? [editingProduct.image] : [])),
+      ...(editingProduct.images ||
+        (editingProduct.image ? [editingProduct.image] : [])),
     ];
     if (index >= 0 && index < currentImages.length) {
       const [selected] = currentImages.splice(index, 1);
@@ -197,39 +248,101 @@ export default function ProductsPage() {
     setDeleteTarget({ id, name });
   };
 
+  const handleToggleStatus = async (prod: Product) => {
+    try {
+      const updated = await apiClient.toggleProductStatus(prod.id);
+      setProducts((prev) =>
+        prev.map((p) => (p.id === prod.id ? updated : p)),
+      );
+      showNotification(
+        `Statut du produit "${prod.name}" basculé vers ${
+          updated.statut === 'active' ? 'Actif' : 'Inactif'
+        }.`,
+      );
+    } catch (err: any) {
+      showNotification(
+        err?.message || 'Erreur lors du changement de statut.',
+        'error',
+      );
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
+    setModalError(null);
 
     // Validation
     const errors: Record<string, string> = {};
-    if (!editingProduct.name?.trim()) errors.name = 'Le nom du vélo ou équipement est requis.';
-    if (editingProduct.price === undefined || editingProduct.price <= 0) errors.price = 'Le prix unitaire doit être supérieur à 0 €.';
-    if (editingProduct.stock === undefined || editingProduct.stock < 0) errors.stock = 'Le stock ne peut être négatif.';
+    if (!editingProduct.name?.trim()) {
+      errors.name = 'Le nom du vélo ou équipement est requis.';
+    }
+    if (!editingProduct.sku?.trim()) {
+      errors.sku = 'La référence (SKU) est requise.';
+    }
+    if (
+      editingProduct.price === undefined ||
+      editingProduct.price === null ||
+      Number(editingProduct.price) < 0
+    ) {
+      errors.price = 'Le prix unitaire doit être supérieur ou égal à 0 €.';
+    }
+    if (
+      editingProduct.stock === undefined ||
+      editingProduct.stock === null ||
+      Number(editingProduct.stock) < 0
+    ) {
+      errors.stock = 'La quantité en stock ne peut pas être négative.';
+    }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
+      setModalError('Veuillez renseigner tous les champs obligatoires indiqués en rouge.');
       return;
     }
 
-    const finalProduct = {
-      ...editingProduct,
-      image: editingProduct.images && editingProduct.images.length > 0 ? editingProduct.images[0] : (editingProduct.image || ''),
-      images: editingProduct.images || [],
-    };
+    try {
+      setIsSaving(true);
+      const finalProduct = {
+        ...editingProduct,
+        name: editingProduct.name?.trim(),
+        sku: editingProduct.sku?.trim().toUpperCase(),
+        price: Number(editingProduct.price),
+        stock: Number(editingProduct.stock || 0),
+        categoryId: editingProduct.categoryId || editingProduct.category,
+        isFeatured: Boolean(editingProduct.isFeatured),
+        statut: editingProduct.statut || 'active',
+        description: editingProduct.description?.trim() || '',
+        coverImage: editingProduct.image || (editingProduct.images && editingProduct.images[0]) || undefined,
+        image:
+          editingProduct.images && editingProduct.images.length > 0
+            ? editingProduct.image || editingProduct.images[0]
+            : editingProduct.image || '',
+        images: editingProduct.images || [],
+      };
 
-    await apiClient.saveProduct(finalProduct as any);
-    await loadProducts();
-    setIsModalOpen(false);
-    setEditingProduct(null);
-    setFeedbackMsg('Produit enregistré avec succès.');
-    setTimeout(() => setFeedbackMsg(null), 3000);
+      await apiClient.saveProduct(finalProduct as any);
+      await loadData();
+      setIsModalOpen(false);
+      setEditingProduct(null);
+      setModalError(null);
+      showNotification('Produit enregistré avec succès.');
+    } catch (err: any) {
+      setModalError(
+        err?.message || "Erreur lors de l'enregistrement du produit.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // Filtered Products
   const filteredProducts = products.filter((prod) => {
     const matchesCategory =
-      selectedCategory === 'all' || prod.category === selectedCategory;
+      selectedCategory === 'all' ||
+      prod.categoryId === selectedCategory ||
+      prod.category === selectedCategory ||
+      prod.categoryLabel === selectedCategory;
 
     const matchesSearch =
       prod.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -245,17 +358,20 @@ export default function ProductsPage() {
   const totalItems = filteredProducts.length;
   const paginatedProducts = filteredProducts.slice(
     (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
+    currentPage * itemsPerPage,
   );
 
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
     );
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.length === paginatedProducts.length && paginatedProducts.length > 0) {
+    if (
+      selectedIds.length === paginatedProducts.length &&
+      paginatedProducts.length > 0
+    ) {
       setSelectedIds([]);
     } else {
       setSelectedIds(paginatedProducts.map((p) => p.id));
@@ -263,7 +379,10 @@ export default function ProductsPage() {
   };
 
   const handleBulkDelete = () => {
-    setDeleteTarget({ isBulk: true, name: `${selectedIds.length} produit(s)` });
+    setDeleteTarget({
+      isBulk: true,
+      name: `${selectedIds.length} produit(s)`,
+    });
   };
 
   const handleConfirmDelete = async () => {
@@ -274,19 +393,21 @@ export default function ProductsPage() {
         for (const id of selectedIds) {
           await apiClient.deleteProduct(id);
         }
-        await loadProducts();
+        await loadData();
         setSelectedIds([]);
-        setFeedbackMsg(`${deleteTarget.name} supprimé(s).`);
+        showNotification(`${deleteTarget.name} supprimé(s).`);
       } else if (deleteTarget.id) {
         await apiClient.deleteProduct(deleteTarget.id);
-        await loadProducts();
+        await loadData();
         setSelectedIds((prev) => prev.filter((i) => i !== deleteTarget.id));
-        setFeedbackMsg(`Produit "${deleteTarget.name}" supprimé.`);
+        showNotification(`Produit "${deleteTarget.name}" supprimé.`);
       }
-      setTimeout(() => setFeedbackMsg(null), 3000);
       setDeleteTarget(null);
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      showNotification(
+        err?.message || 'Erreur lors de la suppression.',
+        'error',
+      );
     } finally {
       setIsDeleting(false);
     }
@@ -294,20 +415,29 @@ export default function ProductsPage() {
 
   const handleBulkExport = () => {
     const selected = products.filter((p) => selectedIds.includes(p.id));
-    const header = 'ID,Nom,SKU,Categorie,Prix,Stock,Statut\n';
+    const header = 'ID,Nom,SKU,Categorie,Prix,Stock,Statut Stock,En Vedette\n';
     const rows = selected
-      .map((p) => `"${p.id}","${p.name}","${p.sku}","${p.categoryLabel}",${p.price},${p.stock},"${p.status}"`)
+      .map(
+        (p) =>
+          `"${p.id}","${p.name}","${p.sku}","${p.categoryLabel}",${p.price},${p.stock},"${p.status}","${p.isFeatured ? 'Oui' : 'Non'}"`,
+      )
       .join('\n');
-    const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([header + rows], {
+      type: 'text/csv;charset=utf-8;',
+    });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', `produits_export_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute(
+      'download',
+      `produits_export_${new Date().toISOString().slice(0, 10)}.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setFeedbackMsg(`Export de ${selected.length} produit(s) généré avec succès.`);
-    setTimeout(() => setFeedbackMsg(null), 3000);
+    showNotification(
+      `Export de ${selected.length} produit(s) généré avec succès.`,
+    );
   };
 
   return (
@@ -319,13 +449,13 @@ export default function ProductsPage() {
             Produits & Modèles Spécialisés
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Gestion du catalogue : Vélos en bambou artisanaux, tricycles Hase Bikes adaptés et ElliptiGO.
+            Gestion du catalogue : Vélos en bambou artisanaux, vélos adaptés et équipements solidaires.
           </p>
         </div>
 
         <button
           onClick={handleOpenAdd}
-          className="btn-primary-gradient inline-flex items-center gap-2 self-start sm:self-auto"
+          className="btn-primary-gradient inline-flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           <span>Ajouter un Produit</span>
@@ -333,41 +463,44 @@ export default function ProductsPage() {
       </div>
 
       {feedbackMsg && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
-          <CheckCircle className="w-4 h-4 text-emerald-600" />
-          <span>{feedbackMsg}</span>
+        <div
+          className={`p-3 rounded-2xl text-xs flex items-center gap-2 animate-fade-in border ${
+            feedbackMsg.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          {feedbackMsg.type === 'error' ? (
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          ) : (
+            <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+          )}
+          <span>{feedbackMsg.text}</span>
         </div>
       )}
 
-      {/* Category Tabs */}
+      {/* Category Tabs (dynamically preloaded from Category module) */}
       <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
         {[
           { id: 'all', label: 'Tous les produits', count: products.length },
-          {
-            id: 'bamboo-bikes',
-            label: 'Vélos en Bambou',
-            count: products.filter((p) => p.category === 'bamboo-bikes').length,
-          },
-          {
-            id: 'hase-bikes',
-            label: 'Hase Bikes (Adaptés)',
-            count: products.filter((p) => p.category === 'hase-bikes').length,
-          },
-          {
-            id: 'elliptigo',
-            label: 'ElliptiGO',
-            count: products.filter((p) => p.category === 'elliptigo').length,
-          },
-          {
-            id: 'accessories',
-            label: 'Accessoires & Pièces',
-            count: products.filter((p) => p.category === 'accessories').length,
-          },
+          ...categories.map((c) => ({
+            id: c.id,
+            label: c.title,
+            count: products.filter(
+              (p) =>
+                p.categoryId === c.id ||
+                p.category === c.id ||
+                p.categoryLabel === c.title,
+            ).length,
+          })),
         ].map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setSelectedCategory(tab.id)}
-            className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 ${
+            onClick={() => {
+              setSelectedCategory(tab.id);
+              setCurrentPage(1);
+            }}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all flex items-center gap-2 cursor-pointer ${
               selectedCategory === tab.id
                 ? 'bg-[#26B997] text-white shadow-sm shadow-emerald-900/20'
                 : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200/80'
@@ -395,7 +528,10 @@ export default function ProductsPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             placeholder="Rechercher par modèle, réf SKU ou caractéristiques..."
             className="input-premium pl-10"
           />
@@ -406,7 +542,10 @@ export default function ProductsPage() {
           <Filter className="w-4 h-4 text-slate-400 shrink-0" />
           <select
             value={stockFilter}
-            onChange={(e) => setStockFilter(e.target.value as any)}
+            onChange={(e) => {
+              setStockFilter(e.target.value as any);
+              setCurrentPage(1);
+            }}
             className="input-premium cursor-pointer font-medium w-full md:w-auto"
           >
             <option value="all">Tous les états de stock</option>
@@ -426,14 +565,14 @@ export default function ProductsPage() {
         <button
           type="button"
           onClick={handleBulkExport}
-          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
         >
           <span>Exporter CSV</span>
         </button>
         <button
           type="button"
           onClick={handleBulkDelete}
-          className="px-3 py-1.5 rounded-xl bg-rose-500/80 hover:bg-rose-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-xl bg-rose-500/80 hover:bg-rose-500 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
         >
           <Trash2 className="w-3.5 h-3.5" />
           <span>Supprimer ({selectedIds.length})</span>
@@ -452,8 +591,12 @@ export default function ProductsPage() {
         ) : filteredProducts.length === 0 ? (
           <div className="p-12 text-center text-slate-500">
             <PackageCheck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-            <p className="font-semibold text-slate-700">Aucun produit ne correspond à ces critères</p>
-            <p className="text-xs text-slate-400 mt-1">Modifiez vos filtres ou effectuez une autre recherche.</p>
+            <p className="font-semibold text-slate-700">
+              Aucun produit ne correspond à ces critères
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Modifiez vos filtres ou effectuez une autre recherche.
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto -mx-6 -mt-6 mb-0">
@@ -463,10 +606,15 @@ export default function ProductsPage() {
                   <th className="py-4 pl-6 pr-2 w-10">
                     <input
                       type="checkbox"
-                      checked={paginatedProducts.length > 0 && selectedIds.length === paginatedProducts.length}
+                      checked={
+                        paginatedProducts.length > 0 &&
+                        selectedIds.length === paginatedProducts.length
+                      }
                       ref={(el) => {
                         if (el) {
-                          el.indeterminate = selectedIds.length > 0 && selectedIds.length < paginatedProducts.length;
+                          el.indeterminate =
+                            selectedIds.length > 0 &&
+                            selectedIds.length < paginatedProducts.length;
                         }
                       }}
                       onChange={handleSelectAll}
@@ -480,6 +628,7 @@ export default function ProductsPage() {
                   <th className="py-4 px-6">Prix Vente</th>
                   <th className="py-4 px-6">Quantité Stock</th>
                   <th className="py-4 px-6">Statut Stock</th>
+                  <th className="py-4 px-6">Statut</th>
                   <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
@@ -534,12 +683,17 @@ export default function ProductsPage() {
                       </td>
 
                       <td className="py-4 px-4">
-                        <div className="font-bold text-slate-900 text-sm">{prod.name}</div>
+                        <div className="font-bold text-slate-900 text-sm">
+                          {prod.name}
+                        </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className="font-mono text-[11px] text-slate-400">{prod.sku}</span>
+                          <span className="font-mono text-[11px] text-slate-400">
+                            {prod.sku}
+                          </span>
                           {prod.isFeatured && (
-                            <span className="px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 text-[10px] font-bold">
-                              En vedette
+                            <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 text-[10px] font-bold flex items-center gap-1">
+                              <Star className="w-2.5 h-2.5 fill-amber-500 text-amber-500" />
+                              <span>En vedette</span>
                             </span>
                           )}
                         </div>
@@ -560,7 +714,9 @@ export default function ProductsPage() {
 
                       <td className="py-4 px-6 font-bold whitespace-nowrap">
                         <div className="flex items-center gap-3">
-                          <span className="text-slate-800">{prod.stock} unités</span>
+                          <span className="text-slate-800">
+                            {prod.stock} unités
+                          </span>
                           <div className="w-14 h-1.5 bg-slate-100 rounded-full overflow-hidden shrink-0">
                             <div
                               className={`h-full rounded-full transition-all duration-300 ${
@@ -587,18 +743,68 @@ export default function ProductsPage() {
                         )}
                       </td>
 
+                      <td className="py-4 px-6 whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => handleToggleStatus(prod)}
+                          title="Cliquer pour basculer le statut"
+                          className="cursor-pointer"
+                        >
+                          {prod.statut === 'inactive' ? (
+                            <Badge variant="neutral">Inactif</Badge>
+                          ) : (
+                            <Badge variant="success">Actif</Badge>
+                          )}
+                        </button>
+                      </td>
+
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
                           <button
+                            type="button"
+                            onClick={() => handleOpenView(prod)}
+                            className="p-1.5 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-colors cursor-pointer"
+                            title="Voir les détails"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleOpenEdit(prod)}
-                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors cursor-pointer"
                             title="Modifier"
                           >
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
+                            type="button"
+                            onClick={() => handleToggleStatus(prod)}
+                            className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                              prod.statut !== 'inactive'
+                                ? 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50'
+                                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'
+                            }`}
+                            title={
+                              prod.statut !== 'inactive'
+                                ? 'Désactiver le produit'
+                                : 'Activer le produit'
+                            }
+                            aria-label={
+                              prod.statut !== 'inactive'
+                                ? 'Désactiver le produit'
+                                : 'Activer le produit'
+                            }
+                          >
+                            {prod.statut !== 'inactive' ? (
+                              <Power className="w-4 h-4 text-emerald-600" />
+                            ) : (
+                              <PowerOff className="w-4 h-4 text-slate-400" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => handleDelete(prod.id, prod.name)}
-                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                             title="Supprimer"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -624,16 +830,233 @@ export default function ProductsPage() {
         </div>
       </div>
 
+      {/* Modal Détails (Clean Flat Design sans boîtes ni bordures de conteneurs) */}
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => setIsDetailModalOpen(false)}
+        title="Détails du produit"
+        description="Fiche descriptive et caractéristiques techniques du modèle"
+        maxWidth="lg"
+      >
+        {viewingProduct && (
+          <div className="space-y-5">
+            {/* Visuels du produit - Présentation e-commerce interactive avec grande vue et miniatures cliquables */}
+            {(() => {
+              const galleryImages =
+                viewingProduct.images && viewingProduct.images.length > 0
+                  ? viewingProduct.images
+                  : viewingProduct.image
+                  ? [viewingProduct.image]
+                  : [];
+              if (galleryImages.length === 0) return null;
+
+              const currentImg = galleryImages[activeImageIndex] || galleryImages[0];
+              const coverImg = viewingProduct.image || galleryImages[0];
+
+              return (
+                <div className="space-y-3">
+                  {/* Grande photo active */}
+                  <div className="relative w-full h-64 sm:h-80 rounded-3xl overflow-hidden bg-slate-50 border border-slate-200/80 flex items-center justify-center shadow-xs">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={currentImg}
+                      alt={viewingProduct.name}
+                      className="w-full h-full object-contain p-2 transition-all duration-300"
+                    />
+                    {currentImg === coverImg && (
+                      <div className="absolute top-3 left-3 bg-[#26B997] text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                        <Star className="w-3 h-3 fill-amber-300 text-amber-300" />
+                        <span>Photo principale</span>
+                      </div>
+                    )}
+                    <span className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white text-[10px] font-mono font-medium px-2 py-0.5 rounded-lg">
+                      {activeImageIndex + 1} / {galleryImages.length}
+                    </span>
+                  </div>
+
+                  {/* Ligne de miniatures (Thumbnails cliquables) */}
+                  {galleryImages.length > 1 && (
+                    <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+                      {galleryImages.map((imgUrl, idx) => {
+                        const isActive = idx === activeImageIndex;
+                        const isPrimary = imgUrl === coverImg;
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setActiveImageIndex(idx)}
+                            className={`relative rounded-xl overflow-hidden w-16 h-16 sm:w-20 sm:h-20 shrink-0 border-2 transition-all cursor-pointer bg-slate-100 ${
+                              isActive
+                                ? 'border-[#26B997] ring-2 ring-[#26B997]/25 scale-105'
+                                : 'border-slate-200 hover:border-slate-300 opacity-70 hover:opacity-100'
+                            }`}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={imgUrl}
+                              alt={`Miniature ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            {isPrimary && (
+                              <span
+                                className="absolute top-1 left-1 w-2 h-2 rounded-full bg-[#26B997] ring-1 ring-white"
+                                title="Photo principale"
+                              />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            {/* En-tête : Nom du vélo & Statut */}
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Nom du vélo ou équipement
+                </span>
+                <h3 className="text-base sm:text-lg font-extrabold text-[#1F6F5C] break-words">
+                  {viewingProduct.name}
+                </h3>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {viewingProduct.isFeatured && (
+                  <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[11px] font-bold flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                    <span>En vedette</span>
+                  </span>
+                )}
+                <Badge
+                  variant={
+                    viewingProduct.statut === 'inactive' ? 'neutral' : 'success'
+                  }
+                  dot
+                >
+                  {viewingProduct.statut === 'inactive' ? 'Inactif' : 'Actif'}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Caractéristiques techniques : SKU, Catégorie, Prix, Stock & État */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-2">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Référence / SKU
+                </span>
+                <p className="font-mono text-xs sm:text-sm font-bold text-slate-800">
+                  {viewingProduct.sku}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Catégorie
+                </span>
+                <p className="font-bold text-xs sm:text-sm text-slate-900">
+                  {viewingProduct.categoryLabel}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Prix de vente
+                </span>
+                <p className="font-extrabold text-xs sm:text-sm text-slate-900">
+                  {viewingProduct.price.toLocaleString('fr-BE')} €
+                </p>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  État du stock
+                </span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-xs sm:text-sm text-slate-800">
+                    {viewingProduct.stock} unité(s)
+                  </span>
+                  {viewingProduct.status === 'in_stock' && (
+                    <Badge variant="success">En stock</Badge>
+                  )}
+                  {viewingProduct.status === 'low_stock' && (
+                    <Badge variant="warning">Faible (≤ 2)</Badge>
+                  )}
+                  {viewingProduct.status === 'out_of_stock' && (
+                    <Badge variant="error">Épuisé</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Description & spécifications techniques */}
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                Description & spécifications techniques
+              </span>
+              <p className="text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-64 overflow-y-auto">
+                {viewingProduct.description ||
+                  'Aucune description ni spécification technique renseignée.'}
+              </p>
+            </div>
+
+            {/* Dates */}
+            <div className="text-[11px] text-slate-400 font-mono flex items-center justify-between pt-2 border-t border-slate-100">
+              <span>Créé le : {viewingProduct.createdAt}</span>
+              {viewingProduct.updatedAt && (
+                <span>Mise à jour : {viewingProduct.updatedAt}</span>
+              )}
+            </div>
+
+            {/* Boutons d'actions */}
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  handleOpenEdit(viewingProduct);
+                }}
+                className="btn-secondary-soft text-xs inline-flex items-center gap-1.5 cursor-pointer"
+              >
+                <Edit2 className="w-3.5 h-3.5" />
+                <span>Modifier ce produit</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsDetailModalOpen(false)}
+                className="btn-primary-gradient text-xs cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Add / Edit Product Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={editingProduct?.id ? 'Modifier le modèle' : 'Ajouter un nouveau modèle'}
+        onClose={() => {
+          setIsModalOpen(false);
+          setModalError(null);
+        }}
+        title={
+          editingProduct?.id ? 'Modifier le modèle' : 'Ajouter un nouveau modèle'
+        }
         description="Fiche technique pour la boutique solidaire No Borders ASBL"
         maxWidth="lg"
       >
         {editingProduct && (
-          <form onSubmit={handleSave} className="space-y-5">
+          <form onSubmit={handleSave} className="space-y-4">
+            {modalError && (
+              <div className="p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-xs flex items-center gap-2.5 animate-fade-in shadow-xs">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span className="font-semibold leading-relaxed">{modalError}</span>
+              </div>
+            )}
+
             <div>
               <label className="label-premium">
                 Nom du vélo ou équipement <span className="text-rose-500">*</span>
@@ -663,35 +1086,112 @@ export default function ProductsPage() {
                   Catégorie spécialisée <span className="text-rose-500">*</span>
                 </label>
                 <select
-                  value={editingProduct.category || 'bamboo-bikes'}
-                  onChange={(e) =>
+                  value={editingProduct.categoryId || editingProduct.category || ''}
+                  onChange={(e) => {
+                    const selectedCat = categories.find(
+                      (c) => c.id === e.target.value,
+                    );
                     setEditingProduct({
                       ...editingProduct,
-                      category: e.target.value as ProductCategory,
-                    })
-                  }
+                      categoryId: e.target.value,
+                      category: e.target.value as any,
+                      categoryLabel:
+                        selectedCat?.title || editingProduct.categoryLabel || '',
+                    });
+                  }}
                   className="input-premium cursor-pointer font-medium"
                 >
-                  <option value="bamboo-bikes">Vélos en Bambou</option>
-                  <option value="hase-bikes">Hase Bikes (Tandems & Trikes)</option>
-                  <option value="elliptigo">ElliptiGO (Outdoor Elliptique)</option>
-                  <option value="accessories">Accessoires & Pièces</option>
+                  {categories.length === 0 && (
+                    <option value="">Sélectionner une catégorie</option>
+                  )}
+                  {categories.map((cat) => (
+                    <option key={cat.id} value={cat.id}>
+                      {cat.title}
+                    </option>
+                  ))}
+                  {/* Fallback si aucune catégorie n'est encore créée */}
+                  {categories.length === 0 && (
+                    <>
+                      <option value="bamboo-bikes">Vélos en Bambou</option>
+                      <option value="hase-bikes">
+                        Hase Bikes (Tandems & Trikes)
+                      </option>
+                      <option value="elliptigo">
+                        ElliptiGO (Outdoor Elliptique)
+                      </option>
+                      <option value="accessories">Accessoires & Pièces</option>
+                    </>
+                  )}
                 </select>
               </div>
 
               <div>
                 <label className="label-premium">
-                  Référence / SKU
+                  Référence / SKU <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={editingProduct.sku || ''}
                   onChange={(e) =>
-                    setEditingProduct({ ...editingProduct, sku: e.target.value })
+                    setEditingProduct({
+                      ...editingProduct,
+                      sku: e.target.value,
+                    })
                   }
                   placeholder="Ex. BAM-GRV-01"
-                  className="input-premium font-mono text-xs uppercase"
+                  className={`input-premium font-mono text-xs uppercase ${
+                    formErrors.sku ? 'border-rose-400 ring-1 ring-rose-300' : ''
+                  }`}
                 />
+                {formErrors.sku && (
+                  <p className="text-xs font-semibold text-rose-600 mt-1.5 flex items-center gap-1">
+                    <AlertCircle className="w-3.5 h-3.5" />
+                    {formErrors.sku}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Sélecteur Mettre en vedette (demandé explicitement) */}
+              <div>
+                <label className="label-premium flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                  <span>Produit en vedette</span>
+                </label>
+                <select
+                  value={editingProduct.isFeatured ? 'true' : 'false'}
+                  onChange={(e) =>
+                    setEditingProduct({
+                      ...editingProduct,
+                      isFeatured: e.target.value === 'true',
+                    })
+                  }
+                  className="input-premium cursor-pointer font-medium"
+                >
+                  <option value="false">Non (Produit standard)</option>
+                  <option value="true">Oui (Mettre en vedette)</option>
+                </select>
+              </div>
+
+              {/* Statut de publication */}
+              <div>
+                <label className="label-premium">
+                  Statut de publication
+                </label>
+                <select
+                  value={editingProduct.statut || 'active'}
+                  onChange={(e) =>
+                    setEditingProduct({
+                      ...editingProduct,
+                      statut: e.target.value as 'active' | 'inactive',
+                    })
+                  }
+                  className="input-premium cursor-pointer font-medium"
+                >
+                  <option value="active">Actif (Publié au catalogue)</option>
+                  <option value="inactive">Inactif (Brouillon masqué)</option>
+                </select>
               </div>
             </div>
 
@@ -704,7 +1204,11 @@ export default function ProductsPage() {
                   type="number"
                   min="0"
                   step="0.01"
-                  value={editingProduct.price !== undefined ? editingProduct.price : ''}
+                  value={
+                    editingProduct.price !== undefined
+                      ? editingProduct.price
+                      : ''
+                  }
                   onChange={(e) =>
                     setEditingProduct({
                       ...editingProduct,
@@ -713,7 +1217,9 @@ export default function ProductsPage() {
                   }
                   placeholder="Ex. 1890"
                   className={`input-premium ${
-                    formErrors.price ? 'border-rose-400 ring-1 ring-rose-300' : ''
+                    formErrors.price
+                      ? 'border-rose-400 ring-1 ring-rose-300'
+                      : ''
                   }`}
                 />
                 {formErrors.price && (
@@ -726,12 +1232,16 @@ export default function ProductsPage() {
 
               <div>
                 <label className="label-premium">
-                  Stock atelier <span className="text-rose-500">*</span>
+                  Quantité en stock <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="number"
                   min="0"
-                  value={editingProduct.stock !== undefined ? editingProduct.stock : ''}
+                  value={
+                    editingProduct.stock !== undefined
+                      ? editingProduct.stock
+                      : ''
+                  }
                   onChange={(e) =>
                     setEditingProduct({
                       ...editingProduct,
@@ -740,7 +1250,9 @@ export default function ProductsPage() {
                   }
                   placeholder="Ex. 5"
                   className={`input-premium ${
-                    formErrors.stock ? 'border-rose-400 ring-1 ring-rose-300' : ''
+                    formErrors.stock
+                      ? 'border-rose-400 ring-1 ring-rose-300'
+                      : ''
                   }`}
                 />
                 {formErrors.stock && (
@@ -779,15 +1291,19 @@ export default function ProductsPage() {
                     <span>Photos du produit</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
-                    Importez des photos depuis votre ordinateur ou ajoutez des liens. La première photo est la photo principale.
+                    Importez des photos depuis votre ordinateur ou renseignez des URLs. La première photo est automatiquement définie comme image de couverture.
                   </p>
                 </div>
                 <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
-                  {(editingProduct.images || (editingProduct.image ? [editingProduct.image] : [])).length} photo(s)
+                  {(
+                    editingProduct.images ||
+                    (editingProduct.image ? [editingProduct.image] : [])
+                  ).length}{' '}
+                  photo(s)
                 </span>
               </div>
 
-              {/* Local File Input & Dropzone (Pièces jointes depuis l'ordinateur) */}
+              {/* Local File Input & Dropzone */}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -832,7 +1348,10 @@ export default function ProductsPage() {
                         : 'Ajouter des photos depuis votre ordinateur (pièce jointe)'}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Glissez vos photos ici ou cliquez pour parcourir • <strong className="text-[#1F6F5C]">Sélectionnez plusieurs photos à la fois</strong>
+                      Glissez vos photos ici ou cliquez pour parcourir •{' '}
+                      <strong className="text-[#1F6F5C]">
+                        Sélectionnez plusieurs photos à la fois
+                      </strong>
                     </p>
                   </div>
                   <button
@@ -841,7 +1360,7 @@ export default function ProductsPage() {
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-[#1F6F5C] font-bold text-xs shadow-xs hover:bg-slate-50 transition-colors mt-1"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white border border-slate-200 text-[#1F6F5C] font-bold text-xs shadow-xs hover:bg-slate-50 transition-colors mt-1 cursor-pointer"
                   >
                     <Paperclip className="w-3.5 h-3.5" />
                     <span>Choisir des fichiers sur mon PC</span>
@@ -850,18 +1369,35 @@ export default function ProductsPage() {
               </div>
 
               {/* Photos Grid */}
-              {((editingProduct.images && editingProduct.images.length > 0) || editingProduct.image) && (
+              {((editingProduct.images && editingProduct.images.length > 0) ||
+                editingProduct.image) && (
                 <div className="space-y-2">
                   <div className="text-[11px] font-semibold text-slate-500 flex items-center justify-between">
-                    <span>Photos actuelles ({ (editingProduct.images || (editingProduct.image ? [editingProduct.image] : [])).length }) :</span>
-                    <span className="text-[10px] text-slate-400">Cliquez sur l&apos;étoile pour changer la photo principale</span>
+                    <span>
+                      Photos actuelles (
+                      {
+                        (
+                          editingProduct.images ||
+                          (editingProduct.image ? [editingProduct.image] : [])
+                        ).length
+                      }
+                      ) :
+                    </span>
+                    <span className="text-[10px] text-slate-400">
+                      Cliquez sur l&apos;étoile pour changer la photo principale
+                    </span>
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {(editingProduct.images || (editingProduct.image ? [editingProduct.image] : [])).map((imgUrl, idx) => (
+                    {(
+                      editingProduct.images ||
+                      (editingProduct.image ? [editingProduct.image] : [])
+                    ).map((imgUrl, idx) => (
                       <div
                         key={idx}
                         className={`relative group rounded-2xl overflow-hidden border-2 bg-slate-100 aspect-square ${
-                          idx === 0 ? 'border-[#26B997] shadow-sm ring-2 ring-[#26B997]/20' : 'border-slate-200'
+                          idx === 0
+                            ? 'border-[#26B997] shadow-sm ring-2 ring-[#26B997]/20'
+                            : 'border-slate-200'
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -882,7 +1418,7 @@ export default function ProductsPage() {
                               type="button"
                               onClick={() => handleSetPrimaryPhoto(idx)}
                               title="Définir comme photo principale"
-                              className="p-1.5 bg-white/95 hover:bg-white text-slate-800 rounded-lg text-xs font-semibold shadow-xs"
+                              className="p-1.5 bg-white/95 hover:bg-white text-slate-800 rounded-lg text-xs font-semibold shadow-xs cursor-pointer"
                             >
                               <Star className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
                             </button>
@@ -891,7 +1427,7 @@ export default function ProductsPage() {
                             type="button"
                             onClick={() => handleRemovePhoto(idx)}
                             title="Supprimer cette photo"
-                            className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs"
+                            className="p-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold shadow-xs cursor-pointer"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
@@ -906,16 +1442,24 @@ export default function ProductsPage() {
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setIsModalOpen(false)}
-                className="btn-secondary-soft"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setModalError(null);
+                }}
+                className="btn-secondary-soft cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 type="submit"
-                className="btn-primary-gradient"
+                disabled={isSaving}
+                className="btn-primary-gradient cursor-pointer disabled:opacity-50"
               >
-                {editingProduct?.id ? 'Enregistrer les modifications' : 'Créer le produit'}
+                {isSaving
+                  ? 'Enregistrement...'
+                  : editingProduct?.id
+                  ? 'Enregistrer les modifications'
+                  : 'Créer le produit'}
               </button>
             </div>
           </form>
@@ -928,11 +1472,15 @@ export default function ProductsPage() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
         loading={isDeleting}
-        title={deleteTarget?.isBulk ? 'Supprimer les produits' : 'Supprimer le produit'}
+        title={
+          deleteTarget?.isBulk
+            ? 'Supprimer les produits'
+            : 'Supprimer le produit'
+        }
         message={
           deleteTarget?.isBulk
             ? `Supprimer définitivement ces ${deleteTarget.name} ?`
-            : 'Supprimer définitivement ce produit ?'
+            : `Supprimer définitivement ce produit ?`
         }
         submessage="Cette action est irréversible."
       />

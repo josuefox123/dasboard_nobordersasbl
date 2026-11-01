@@ -1,11 +1,12 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Handshake,
   Plus,
   Search,
+  Eye,
   Edit3,
   Trash2,
   CheckCircle2,
@@ -38,19 +39,42 @@ export default function PartnersPage() {
   // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingPartner, setEditingPartner] = useState<Partial<PartnerItem> | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id?: string; title: string; isBulk?: boolean } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [viewingPartner, setViewingPartner] = useState<PartnerItem | null>(null);
 
   // Logo upload state in form
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showNotification = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+    setNotice({ message: msg, type });
+    setTimeout(() => setNotice(null), 3500);
+  }, []);
+
+  const loadPartners = useCallback(async () => {
+    try {
+      const data = await apiClient.getPartners();
+      setPartners(data);
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du chargement des partenaires', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
 
   useEffect(() => {
     loadPartners();
-  }, []);
+  }, [loadPartners]);
 
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -61,21 +85,9 @@ export default function PartnersPage() {
     }
   }, [searchParams]);
 
-  async function loadPartners() {
-    try {
-      const data = await apiClient.getPartners();
-      setPartners(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const showNotification = (msg: string) => {
-    setNotice(msg);
-    setTimeout(() => setNotice(null), 3000);
-  };
-
   const handleOpenAdd = () => {
+    setFormError(null);
+    setLogoFile(null);
     setEditingPartner({
       name: '',
       logo: '',
@@ -85,8 +97,15 @@ export default function PartnersPage() {
   };
 
   const handleOpenEdit = (partner: PartnerItem) => {
+    setFormError(null);
+    setLogoFile(null);
     setEditingPartner({ ...partner });
     setIsFormModalOpen(true);
+  };
+
+  const handleOpenDetail = (partner: PartnerItem) => {
+    setViewingPartner(partner);
+    setIsDetailModalOpen(true);
   };
 
   // Image upload handling
@@ -95,6 +114,7 @@ export default function PartnersPage() {
     const file = files[0];
     if (!file.type.startsWith('image/')) return;
 
+    setLogoFile(file);
     setIsUploadingLogo(true);
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -115,6 +135,7 @@ export default function PartnersPage() {
 
   const handleRemoveLogo = () => {
     if (!editingPartner) return;
+    setLogoFile(null);
     setEditingPartner({ ...editingPartner, logo: '' });
   };
 
@@ -122,27 +143,55 @@ export default function PartnersPage() {
     e.preventDefault();
     if (!editingPartner || !editingPartner.name?.trim()) return;
 
-    await apiClient.savePartner(editingPartner as any);
-    await loadPartners();
-    setIsFormModalOpen(false);
-    const wasEditing = !!editingPartner.id;
-    setEditingPartner(null);
-    showNotification(
-      wasEditing
-        ? 'Partenaire modifié avec succès.'
-        : 'Nouveau partenaire ajouté avec succès.'
-    );
+    if (!logoFile && !editingPartner.logo?.trim()) {
+      setFormError('Le logo du partenaire est obligatoire.');
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setFormError(null);
+      await apiClient.savePartner({
+        ...(editingPartner as any),
+        logoFile,
+      });
+      await loadPartners();
+      setIsFormModalOpen(false);
+      const wasEditing = !!editingPartner.id;
+      setEditingPartner(null);
+      setLogoFile(null);
+      showNotification(
+        wasEditing
+          ? 'Partenaire modifié avec succès.'
+          : 'Nouveau partenaire ajouté avec succès.',
+        'success',
+      );
+    } catch (err: any) {
+      console.error(err);
+      setFormError(err?.message || 'Erreur lors de la sauvegarde du partenaire');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggleStatus = async (partner: PartnerItem) => {
-    const updated = await apiClient.togglePartnerStatus(partner.id);
-    if (updated) {
-      setPartners((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      showNotification(
-        updated.status === 'active'
-          ? `Partenaire "${partner.name}" activé.`
-          : `Partenaire "${partner.name}" désactivé.`
-      );
+    try {
+      const updated = await apiClient.togglePartnerStatus(partner.id);
+      if (updated) {
+        setPartners((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        if (viewingPartner?.id === updated.id) {
+          setViewingPartner(updated);
+        }
+        showNotification(
+          updated.status === 'active'
+            ? `Partenaire "${partner.name}" activé.`
+            : `Partenaire "${partner.name}" désactivé.`,
+          'success',
+        );
+      }
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du changement de statut', 'error');
     }
   };
 
@@ -177,17 +226,22 @@ export default function PartnersPage() {
           await apiClient.deletePartner(id);
         }
         await loadPartners();
-        showNotification(`${selectedIds.length} partenaire(s) supprimé(s).`);
+        showNotification(`${selectedIds.length} partenaire(s) supprimé(s).`, 'success');
         setSelectedIds([]);
       } else if (deleteTarget.id) {
         await apiClient.deletePartner(deleteTarget.id);
         await loadPartners();
         setSelectedIds((prev) => prev.filter((i) => i !== deleteTarget.id));
-        showNotification(`Partenaire "${deleteTarget.title}" supprimé.`);
+        if (viewingPartner?.id === deleteTarget.id) {
+          setIsDetailModalOpen(false);
+          setViewingPartner(null);
+        }
+        showNotification(`Partenaire "${deleteTarget.title}" supprimé.`, 'success');
       }
       setDeleteTarget(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showNotification(err?.message || 'Erreur lors de la suppression du partenaire', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -229,9 +283,19 @@ export default function PartnersPage() {
       </div>
 
       {notice && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{notice}</span>
+        <div
+          className={`p-3 border rounded-2xl text-xs flex items-center gap-2 animate-fade-in ${
+            notice.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <CheckCircle2
+            className={`w-4 h-4 shrink-0 ${
+              notice.type === 'error' ? 'text-rose-600' : 'text-emerald-600'
+            }`}
+          />
+          <span>{notice.message}</span>
         </div>
       )}
 
@@ -361,7 +425,10 @@ export default function PartnersPage() {
 
                       {/* Colonne 1 : Nom du partenaire */}
                       <td className="py-4 px-4 font-semibold text-slate-900">
-                        <span className="text-sm font-bold text-slate-900 hover:text-[#26B997] transition-colors">
+                        <span
+                          onClick={() => handleOpenDetail(partner)}
+                          className="text-sm font-bold text-slate-900 hover:text-[#26B997] cursor-pointer transition-colors"
+                        >
                           {partner.name}
                         </span>
                       </td>
@@ -414,6 +481,17 @@ export default function PartnersPage() {
                       {/* Colonne 5 : Actions */}
                       <td className="py-4 px-6 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1.5">
+                          {/* Voir / Détails */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetail(partner)}
+                            className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
+                            title="Consulter les détails"
+                            aria-label={`Détails de ${partner.name}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
                           {/* Modifier */}
                           <button
                             type="button"
@@ -476,12 +554,94 @@ export default function PartnersPage() {
         </div>
       </div>
 
+      {/* Modal Détails Partenaire */}
+      <Modal
+        isOpen={isDetailModalOpen}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setViewingPartner(null);
+        }}
+        title="Détails du partenaire"
+        description="Informations et aperçu du logo du partenaire"
+        maxWidth="md"
+      >
+        {viewingPartner && (
+          <div className="space-y-5">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Nom du partenaire
+                </span>
+                <h3 className="text-base font-extrabold text-[#1F6F5C] break-words">
+                  {viewingPartner.name}
+                </h3>
+              </div>
+              <Badge
+                variant={viewingPartner.status === 'active' ? 'success' : 'neutral'}
+                dot
+              >
+                {viewingPartner.status === 'active' ? 'Actif' : 'Désactivé'}
+              </Badge>
+            </div>
+
+            <div>
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                Logo
+              </span>
+              <div className="p-6 rounded-2xl bg-white border border-slate-200 flex items-center justify-center shadow-xs">
+                {viewingPartner.logo ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img
+                    src={viewingPartner.logo}
+                    alt={`Logo ${viewingPartner.name}`}
+                    className="max-h-36 max-w-full object-contain"
+                  />
+                ) : (
+                  <Handshake className="w-12 h-12 text-slate-300" />
+                )}
+              </div>
+            </div>
+
+            <div className="text-[11px] text-slate-400 font-mono flex items-center justify-between pt-2 border-t border-slate-100">
+              <span>Créé le : {viewingPartner.createdAt}</span>
+              {viewingPartner.updatedAt && (
+                <span>Mise à jour : {viewingPartner.updatedAt}</span>
+              )}
+            </div>
+
+            <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDetailModalOpen(false);
+                  handleOpenEdit(viewingPartner);
+                }}
+                className="btn-secondary-soft text-xs inline-flex items-center gap-1.5"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Modifier ce partenaire</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsDetailModalOpen(false)}
+                className="btn-primary-gradient text-xs"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
       {/* Formulaire réutilisable (Création & Modification) */}
       <Modal
         isOpen={isFormModalOpen}
         onClose={() => {
           setIsFormModalOpen(false);
           setEditingPartner(null);
+          setLogoFile(null);
+          setFormError(null);
         }}
         title={editingPartner?.id ? 'Modifier le partenaire' : 'Ajouter un partenaire'}
         description="Renseignez le nom, téléversez le logo et définissez le statut du partenaire"
@@ -489,6 +649,12 @@ export default function PartnersPage() {
       >
         {editingPartner && (
           <form onSubmit={handleSave} className="space-y-4">
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs leading-relaxed">
+                {formError}
+              </div>
+            )}
+
             {/* Champ 1 : Nom */}
             <div>
               <label className="label-premium">
@@ -533,7 +699,7 @@ export default function PartnersPage() {
                 <div>
                   <label className="label-premium mb-0 flex items-center gap-1.5">
                     <ImageIcon className="w-4 h-4 text-[#26B997]" />
-                    <span>Logo du partenaire</span>
+                    <span>Logo du partenaire <span className="text-rose-500">*</span></span>
                   </label>
                   <p className="text-[11px] text-slate-500">
                     Téléversez le logo (PNG, JPG, SVG, WebP)
@@ -620,9 +786,10 @@ export default function PartnersPage() {
                 <input
                   type="url"
                   value={editingPartner.logo?.startsWith('data:') ? '' : editingPartner.logo || ''}
-                  onChange={(e) =>
-                    setEditingPartner({ ...editingPartner, logo: e.target.value })
-                  }
+                  onChange={(e) => {
+                    setLogoFile(null);
+                    setEditingPartner({ ...editingPartner, logo: e.target.value });
+                  }}
                   placeholder="https://..."
                   className="input-premium font-mono text-xs"
                 />
@@ -636,6 +803,8 @@ export default function PartnersPage() {
                 onClick={() => {
                   setIsFormModalOpen(false);
                   setEditingPartner(null);
+                  setLogoFile(null);
+                  setFormError(null);
                 }}
                 className="btn-secondary-soft text-xs"
               >
@@ -643,9 +812,14 @@ export default function PartnersPage() {
               </button>
               <button
                 type="submit"
-                className="btn-primary-gradient text-xs"
+                disabled={isSaving}
+                className="btn-primary-gradient text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingPartner.id ? 'Enregistrer les modifications' : 'Créer le partenaire'}
+                {isSaving
+                  ? 'Enregistrement...'
+                  : editingPartner.id
+                  ? 'Enregistrer les modifications'
+                  : 'Créer le partenaire'}
               </button>
             </div>
           </form>

@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Eye, EyeOff, Loader2, AlertCircle } from 'lucide-react';
+import { apiClient } from '@/lib/api-client';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -14,7 +15,19 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    // Préchauffer le cookie CSRF en arrière-plan dès le montage de la page,
+    // de sorte qu'il soit déjà présent quand l'utilisateur clique sur Connexion.
+    apiClient.warmupCsrf();
+
+    // Précharger les pages vers lesquelles on redirige après connexion,
+    // pour éliminer le cold-start de compilation Next.js au moment de la navigation.
+    router.prefetch('/otp');
+    router.prefetch('/2fa-setup');
+    router.prefetch('/dashboard');
+  }, [router]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -24,12 +37,40 @@ export default function LoginPage() {
     }
 
     setIsLoading(true);
+    // Mesure de performance — temps entre clic et réponse API (sans données sensibles)
+    const t0 = performance.now();
 
-    // Simulation de connexion -> redirection vers OTP pour valider la 2FA
-    setTimeout(() => {
+    try {
+      const response = await apiClient.login({ email, password });
+      const apiMs = Math.round(performance.now() - t0);
+      console.debug(`[auth/login] API: ${apiMs}ms → status: ${(response as any).status ?? 'success'}`);
+
+      if (response.status === '2fa_required') {
+        // 2FA déjà configuré → vérification classique du code TOTP
+        apiClient.clearTwoFactorSetupData();
+        router.push('/otp');
+      } else if (response.status === '2fa_setup_required') {
+        // Première connexion : 2FA requis mais pas encore configuré
+        apiClient.setTwoFactorSetupData({
+          qr_uri: response.qr_uri,
+          qr_code_svg: response.qr_code_svg,
+          manual_key: response.manual_key,
+        });
+        router.push('/2fa-setup');
+      } else {
+        // Connexion directe (ADMIN_2FA_ENABLED=false ou utilisateur standard)
+        router.push('/dashboard');
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Une erreur imprévue est survenue lors de la connexion.';
+      setError(message);
       setIsLoading(false);
-      router.push('/otp');
-    }, 700);
+    }
+    // Note : on ne fait pas setIsLoading(false) en cas de succès — le spinner
+    // doit rester visible jusqu'à ce que la navigation ait effectivement eu lieu.
   };
 
   return (
@@ -68,10 +109,7 @@ export default function LoginPage() {
               required
               autoFocus
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setError(null);
-              }}
+              onChange={(e) => { setEmail(e.target.value); setError(null); }}
               placeholder="admin@nobordersasbl.be"
               className="w-full pl-10 pr-4 py-3 text-sm text-slate-900 bg-white border border-slate-200 rounded-xl focus:border-[#26B997] focus:ring-4 focus:ring-[#26B997]/15 transition-all outline-none shadow-sm hover:border-slate-300 placeholder:text-slate-400"
             />
@@ -101,10 +139,7 @@ export default function LoginPage() {
               type={showPassword ? 'text' : 'password'}
               required
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
-                setError(null);
-              }}
+              onChange={(e) => { setPassword(e.target.value); setError(null); }}
               placeholder="••••••••"
               className="w-full pl-10 pr-10 py-3 text-sm text-slate-900 bg-white border border-slate-200 rounded-xl focus:border-[#26B997] focus:ring-4 focus:ring-[#26B997]/15 transition-all outline-none shadow-sm hover:border-slate-300 placeholder:text-slate-400 font-sans"
             />
@@ -128,10 +163,7 @@ export default function LoginPage() {
             onChange={(e) => setRememberMe(e.target.checked)}
             className="w-4 h-4 rounded border-slate-300 text-[#26B997] focus:ring-[#26B997] cursor-pointer"
           />
-          <label
-            htmlFor="rememberMe"
-            className="text-xs text-slate-600 cursor-pointer select-none"
-          >
+          <label htmlFor="rememberMe" className="text-xs text-slate-600 cursor-pointer select-none">
             Se souvenir de cet appareil pendant 30 jours
           </label>
         </div>
@@ -152,15 +184,7 @@ export default function LoginPage() {
           )}
         </button>
 
-        {/* Lien direct OTP */}
-        <div className="text-center mt-4">
-          <Link
-            href="/otp"
-            className="text-xs text-slate-500 hover:text-[#1F6F5C] transition-colors font-medium"
-          >
-            Déjà invité à valider un code 2FA ? Entrer le code OTP →
-          </Link>
-        </div>
+
       </form>
     </div>
   );

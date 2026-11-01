@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Radio,
@@ -16,7 +16,6 @@ import {
   Upload,
   Paperclip,
   ExternalLink,
-  Globe,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { PressItem } from '@/types/dashboard';
@@ -26,6 +25,13 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import { BatchActionBar } from '@/components/ui/BatchActionBar';
 import { DeleteConfirmModal } from '@/components/ui/DeleteConfirmModal';
+
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+];
 
 export default function PressPage() {
   const [pressItems, setPressItems] = useState<PressItem[]>([]);
@@ -41,6 +47,9 @@ export default function PressPage() {
   // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<PressItem> | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id?: string; title: string; isBulk?: boolean } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -52,11 +61,28 @@ export default function PressPage() {
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showNotification = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+    setNotice({ message: msg, type });
+    setTimeout(() => setNotice(null), 3500);
+  }, []);
+
+  const loadPressItems = useCallback(async () => {
+    try {
+      const data = await apiClient.getPressItems();
+      setPressItems(data);
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du chargement de la presse', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
 
   useEffect(() => {
     loadPressItems();
-  }, []);
+  }, [loadPressItems]);
 
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -67,47 +93,54 @@ export default function PressPage() {
     }
   }, [searchParams]);
 
-  async function loadPressItems() {
-    try {
-      const data = await apiClient.getPressItems();
-      setPressItems(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const showNotification = (msg: string) => {
-    setNotice(msg);
-    setTimeout(() => setNotice(null), 3000);
-  };
-
   const handleOpenAdd = () => {
+    setFormError(null);
+    setImageFile(null);
     setEditingItem({
       title: '',
       description: '',
       link: '',
       image: '',
+      source: '',
       status: 'active',
     });
     setIsFormModalOpen(true);
   };
 
   const handleOpenEdit = (item: PressItem) => {
+    setFormError(null);
+    setImageFile(null);
     setEditingItem({ ...item });
     setIsFormModalOpen(true);
   };
 
-  const handleOpenDetail = (item: PressItem) => {
+  const handleOpenDetail = async (item: PressItem) => {
     setViewingItem(item);
     setIsDetailModalOpen(true);
+    try {
+      const fresh = await apiClient.getPressItemById(item.id);
+      setViewingItem(fresh);
+    } catch {
+      // Conserver les données locales déjà affichées si la requête échoue
+    }
   };
 
-  // Image Upload Handler
+  // Image Upload Handler (JPG, PNG, WEBP uniquement)
   const processImageFile = (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
     const file = files[0];
-    if (!file.type.startsWith('image/')) return;
+    const mime = (file.type || '').toLowerCase();
 
+    if (!ALLOWED_IMAGE_TYPES.includes(mime)) {
+      setFormError('Format d’image non autorisé. Formats acceptés : JPG, PNG et WEBP.');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setFormError(null);
+    setImageFile(file);
     setIsUploadingFiles(true);
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -128,6 +161,7 @@ export default function PressPage() {
 
   const handleRemovePhoto = () => {
     if (!editingItem) return;
+    setImageFile(null);
     setEditingItem({ ...editingItem, image: '' });
   };
 
@@ -135,30 +169,50 @@ export default function PressPage() {
     e.preventDefault();
     if (!editingItem || !editingItem.title?.trim()) return;
 
-    await apiClient.savePressItem(editingItem as any);
-    await loadPressItems();
-    setIsFormModalOpen(false);
-    const wasEditing = !!editingItem.id;
-    setEditingItem(null);
-    showNotification(
-      wasEditing
-        ? 'Élément de presse modifié avec succès.'
-        : 'Nouvel élément de presse ajouté avec succès.'
-    );
+    try {
+      setIsSaving(true);
+      setFormError(null);
+      await apiClient.savePressItem({
+        ...(editingItem as any),
+        imageFile,
+      });
+      await loadPressItems();
+      setIsFormModalOpen(false);
+      const wasEditing = !!editingItem.id;
+      setEditingItem(null);
+      setImageFile(null);
+      showNotification(
+        wasEditing
+          ? 'Élément de presse modifié avec succès.'
+          : 'Nouvel élément de presse ajouté avec succès.',
+        'success',
+      );
+    } catch (err: any) {
+      console.error(err);
+      setFormError(err?.message || 'Erreur lors de la sauvegarde de l’élément de presse');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggleStatus = async (item: PressItem) => {
-    const updated = await apiClient.togglePressItemStatus(item.id);
-    if (updated) {
-      setPressItems((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      if (viewingItem?.id === updated.id) {
-        setViewingItem(updated);
+    try {
+      const updated = await apiClient.togglePressItemStatus(item.id);
+      if (updated) {
+        setPressItems((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        if (viewingItem?.id === updated.id) {
+          setViewingItem(updated);
+        }
+        showNotification(
+          updated.status === 'active'
+            ? `Élément "${item.title.slice(0, 30)}..." activé.`
+            : `Élément "${item.title.slice(0, 30)}..." désactivé.`,
+          'success',
+        );
       }
-      showNotification(
-        updated.status === 'active'
-          ? `Élément "${item.title.slice(0, 30)}..." activé.`
-          : `Élément "${item.title.slice(0, 30)}..." désactivé.`
-      );
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du changement de statut', 'error');
     }
   };
 
@@ -193,7 +247,7 @@ export default function PressPage() {
           await apiClient.deletePressItem(id);
         }
         await loadPressItems();
-        showNotification(`${selectedIds.length} élément(s) supprimé(s).`);
+        showNotification(`${selectedIds.length} élément(s) supprimé(s).`, 'success');
         setSelectedIds([]);
       } else if (deleteTarget.id) {
         await apiClient.deletePressItem(deleteTarget.id);
@@ -203,11 +257,12 @@ export default function PressPage() {
           setIsDetailModalOpen(false);
           setViewingItem(null);
         }
-        showNotification(`Élément "${deleteTarget.title}" supprimé.`);
+        showNotification(`Élément "${deleteTarget.title}" supprimé.`, 'success');
       }
       setDeleteTarget(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showNotification(err?.message || 'Erreur lors de la suppression de l’élément', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -256,9 +311,19 @@ export default function PressPage() {
       </div>
 
       {notice && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{notice}</span>
+        <div
+          className={`p-3 rounded-2xl text-xs flex items-center gap-2 animate-fade-in border ${
+            notice.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <CheckCircle2
+            className={`w-4 h-4 shrink-0 ${
+              notice.type === 'error' ? 'text-rose-600' : 'text-emerald-600'
+            }`}
+          />
+          <span>{notice.message}</span>
         </div>
       )}
 
@@ -565,14 +630,12 @@ export default function PressPage() {
 
             {/* Titre */}
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Titre
-              </label>
-              <div className="p-3.5 bg-[#E8F8F5]/50 border border-[#26B997]/25 rounded-xl">
-                <p className="font-bold text-base text-[#1F6F5C]">
-                  {viewingItem.title}
-                </p>
-              </div>
+              </span>
+              <p className="font-bold text-base text-[#1F6F5C] break-words">
+                {viewingItem.title}
+              </p>
             </div>
 
             {/* Image d’illustration */}
@@ -618,12 +681,12 @@ export default function PressPage() {
             {/* Description */}
             {viewingItem.description && (
               <div>
-                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                   Présentation / Résumé
-                </label>
-                <div className="p-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-normal shadow-xs">
+                </span>
+                <p className="text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-72 overflow-y-auto">
                   {viewingItem.description}
-                </div>
+                </p>
               </div>
             )}
 
@@ -665,6 +728,8 @@ export default function PressPage() {
         onClose={() => {
           setIsFormModalOpen(false);
           setEditingItem(null);
+          setImageFile(null);
+          setFormError(null);
         }}
         title={editingItem?.id ? 'Modifier l’élément de presse' : 'Ajouter un élément de presse'}
         description="Renseignez le titre, le statut, l’image, le lien et la description"
@@ -672,6 +737,12 @@ export default function PressPage() {
       >
         {editingItem && (
           <form onSubmit={handleSave} className="space-y-4">
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-medium">
+                {formError}
+              </div>
+            )}
+
             {/* Titre */}
             <div>
               <label className="label-premium">
@@ -767,7 +838,7 @@ export default function PressPage() {
                     <span>Image associée</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
-                    Importez une photo d’illustration depuis votre ordinateur
+                    Importez une photo d’illustration depuis votre ordinateur (JPG, PNG, WEBP)
                   </p>
                 </div>
               </div>
@@ -775,7 +846,7 @@ export default function PressPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files) processImageFile(e.target.files);
@@ -866,9 +937,12 @@ export default function PressPage() {
             <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
               <button
                 type="button"
+                disabled={isSaving}
                 onClick={() => {
                   setIsFormModalOpen(false);
                   setEditingItem(null);
+                  setImageFile(null);
+                  setFormError(null);
                 }}
                 className="btn-secondary-soft text-xs"
               >
@@ -876,9 +950,14 @@ export default function PressPage() {
               </button>
               <button
                 type="submit"
-                className="btn-primary-gradient text-xs"
+                disabled={isSaving}
+                className="btn-primary-gradient text-xs disabled:opacity-60"
               >
-                {editingItem?.id ? 'Enregistrer les modifications' : 'Créer l’élément'}
+                {isSaving
+                  ? 'Enregistrement...'
+                  : editingItem?.id
+                  ? 'Enregistrer les modifications'
+                  : 'Créer l’élément'}
               </button>
             </div>
           </form>

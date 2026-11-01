@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   FolderTree,
@@ -14,7 +14,6 @@ import {
   PowerOff,
   Image as ImageIcon,
   Upload,
-  Paperclip,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
 import { CategoryItem } from '@/types/dashboard';
@@ -24,6 +23,13 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { Pagination } from '@/components/ui/Pagination';
 import { BatchActionBar } from '@/components/ui/BatchActionBar';
 import { DeleteConfirmModal } from '@/components/ui/DeleteConfirmModal';
+
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+];
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
@@ -39,6 +45,9 @@ export default function CategoriesPage() {
   // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Partial<CategoryItem> | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [viewingCategory, setViewingCategory] = useState<CategoryItem | null>(null);
@@ -48,15 +57,32 @@ export default function CategoriesPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Delete modal state
   const [deleteTarget, setDeleteTarget] = useState<{ id?: string; title: string; isBulk?: boolean } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const showNotification = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+    setNotice({ message: msg, type });
+    setTimeout(() => setNotice(null), 3500);
+  }, []);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const data = await apiClient.getCategories();
+      setCategories(data);
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du chargement des catégories', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
+
   useEffect(() => {
     loadCategories();
-  }, []);
+  }, [loadCategories]);
 
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -67,21 +93,9 @@ export default function CategoriesPage() {
     }
   }, [searchParams]);
 
-  async function loadCategories() {
-    try {
-      const data = await apiClient.getCategories();
-      setCategories(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const showNotification = (msg: string) => {
-    setNotice(msg);
-    setTimeout(() => setNotice(null), 3000);
-  };
-
   const handleOpenAdd = () => {
+    setFormError(null);
+    setImageFile(null);
     setEditingCategory({
       title: '',
       description: '',
@@ -91,22 +105,46 @@ export default function CategoriesPage() {
     setIsFormModalOpen(true);
   };
 
-  const handleOpenEdit = (category: CategoryItem) => {
+  const handleOpenEdit = async (category: CategoryItem) => {
+    setFormError(null);
+    setImageFile(null);
     setEditingCategory({ ...category });
     setIsFormModalOpen(true);
+    try {
+      const fresh = await apiClient.getCategoryById(category.id);
+      setEditingCategory({ ...fresh });
+    } catch {
+      // Conserver les données locales déjà affichées si la requête échoue
+    }
   };
 
-  const handleOpenDetail = (category: CategoryItem) => {
+  const handleOpenDetail = async (category: CategoryItem) => {
     setViewingCategory(category);
     setIsDetailModalOpen(true);
+    try {
+      const fresh = await apiClient.getCategoryById(category.id);
+      setViewingCategory(fresh);
+    } catch {
+      // Conserver les données locales déjà affichées si la requête échoue
+    }
   };
 
-  // Image upload handling
+  // Image upload handling (JPG, PNG, WEBP uniquement)
   const processImageFile = (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
     const file = files[0];
-    if (!file.type.startsWith('image/')) return;
+    const mime = (file.type || '').toLowerCase();
 
+    if (!ALLOWED_IMAGE_TYPES.includes(mime)) {
+      setFormError('Format d’image non autorisé. Formats acceptés : JPG, PNG et WEBP.');
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+      return;
+    }
+
+    setFormError(null);
+    setImageFile(file);
     setIsUploadingImage(true);
     const reader = new FileReader();
     reader.onload = (event) => {
@@ -127,6 +165,7 @@ export default function CategoriesPage() {
 
   const handleRemoveImage = () => {
     if (!editingCategory) return;
+    setImageFile(null);
     setEditingCategory({ ...editingCategory, image: '' });
   };
 
@@ -134,30 +173,50 @@ export default function CategoriesPage() {
     e.preventDefault();
     if (!editingCategory || !editingCategory.title?.trim()) return;
 
-    await apiClient.saveCategory(editingCategory as any);
-    await loadCategories();
-    setIsFormModalOpen(false);
-    const wasEditing = !!editingCategory.id;
-    setEditingCategory(null);
-    showNotification(
-      wasEditing
-        ? 'Catégorie modifiée avec succès.'
-        : 'Nouvelle catégorie ajoutée avec succès.'
-    );
+    try {
+      setIsSaving(true);
+      setFormError(null);
+      await apiClient.saveCategory({
+        ...(editingCategory as any),
+        imageFile,
+      });
+      await loadCategories();
+      setIsFormModalOpen(false);
+      const wasEditing = !!editingCategory.id;
+      setEditingCategory(null);
+      setImageFile(null);
+      showNotification(
+        wasEditing
+          ? 'Catégorie modifiée avec succès.'
+          : 'Nouvelle catégorie ajoutée avec succès.',
+        'success',
+      );
+    } catch (err: any) {
+      console.error(err);
+      setFormError(err?.message || 'Erreur lors de la sauvegarde de la catégorie');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggleStatus = async (category: CategoryItem) => {
-    const updated = await apiClient.toggleCategoryStatus(category.id);
-    if (updated) {
-      setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
-      if (viewingCategory?.id === updated.id) {
-        setViewingCategory(updated);
+    try {
+      const updated = await apiClient.toggleCategoryStatus(category.id);
+      if (updated) {
+        setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+        if (viewingCategory?.id === updated.id) {
+          setViewingCategory(updated);
+        }
+        showNotification(
+          updated.status === 'active'
+            ? `Catégorie "${category.title}" activée.`
+            : `Catégorie "${category.title}" désactivée.`,
+          'success',
+        );
       }
-      showNotification(
-        updated.status === 'active'
-          ? `Catégorie "${category.title}" activée.`
-          : `Catégorie "${category.title}" désactivée.`
-      );
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du changement de statut', 'error');
     }
   };
 
@@ -192,7 +251,7 @@ export default function CategoriesPage() {
           await apiClient.deleteCategory(id);
         }
         await loadCategories();
-        showNotification(`${deleteTarget.title} supprimée(s).`);
+        showNotification(`${deleteTarget.title} supprimée(s).`, 'success');
         setSelectedIds([]);
       } else if (deleteTarget.id) {
         await apiClient.deleteCategory(deleteTarget.id);
@@ -202,11 +261,12 @@ export default function CategoriesPage() {
           setIsDetailModalOpen(false);
           setViewingCategory(null);
         }
-        showNotification(`Catégorie "${deleteTarget.title}" supprimée.`);
+        showNotification(`Catégorie "${deleteTarget.title}" supprimée.`, 'success');
       }
       setDeleteTarget(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showNotification(err?.message || 'Erreur lors de la suppression de la catégorie', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -250,9 +310,19 @@ export default function CategoriesPage() {
       </div>
 
       {notice && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{notice}</span>
+        <div
+          className={`p-3 rounded-2xl text-xs flex items-center gap-2 animate-fade-in border ${
+            notice.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <CheckCircle2
+            className={`w-4 h-4 shrink-0 ${
+              notice.type === 'error' ? 'text-rose-600' : 'text-emerald-600'
+            }`}
+          />
+          <span>{notice.message}</span>
         </div>
       )}
 
@@ -545,12 +615,12 @@ export default function CategoriesPage() {
             )}
 
             {/* En-tête : Titre & Statut */}
-            <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-slate-50 border border-slate-100">
+            <div className="flex items-start justify-between gap-3">
               <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                   Nom de la catégorie
                 </span>
-                <h3 className="text-base font-extrabold text-[#1F6F5C]">
+                <h3 className="text-base font-extrabold text-[#1F6F5C] break-words">
                   {viewingCategory.title}
                 </h3>
               </div>
@@ -567,9 +637,9 @@ export default function CategoriesPage() {
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Description complète
               </span>
-              <div className="p-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-normal shadow-xs">
+              <p className="text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-72 overflow-y-auto">
                 {viewingCategory.description || 'Aucune description renseignée pour cette catégorie.'}
-              </div>
+              </p>
             </div>
 
             {/* Dates */}
@@ -612,6 +682,8 @@ export default function CategoriesPage() {
         onClose={() => {
           setIsFormModalOpen(false);
           setEditingCategory(null);
+          setImageFile(null);
+          setFormError(null);
         }}
         title={editingCategory?.id ? 'Modifier la catégorie' : 'Ajouter une catégorie'}
         description="Renseignez le titre, la description, l'image d'illustration et le statut"
@@ -619,6 +691,12 @@ export default function CategoriesPage() {
       >
         {editingCategory && (
           <form onSubmit={handleSave} className="space-y-4">
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs leading-relaxed">
+                {formError}
+              </div>
+            )}
+
             {/* Champ 1 : Titre */}
             <div>
               <label className="label-premium">
@@ -682,7 +760,7 @@ export default function CategoriesPage() {
                     <span>Image d’illustration</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
-                    Ajoutez une photo pour illustrer la catégorie (PNG, JPG, SVG, WebP)
+                    Importez une image depuis votre ordinateur (formats acceptés : JPG, PNG, WEBP)
                   </p>
                 </div>
               </div>
@@ -690,7 +768,7 @@ export default function CategoriesPage() {
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files) processImageFile(e.target.files);
@@ -750,27 +828,10 @@ export default function CategoriesPage() {
                       : 'Cliquez ou glissez-déposez une image ici'}
                   </p>
                   <p className="text-[11px] text-slate-400 mt-1">
-                    PNG, JPG, WEBP jusqu’à 5 Mo
+                    JPG, PNG ou WEBP jusqu’à 5 Mo
                   </p>
                 </div>
               )}
-
-              {/* Option URL directe pour l'image */}
-              <div className="pt-2">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500 mb-1">
-                  <Paperclip className="w-3.5 h-3.5" />
-                  <span>Ou renseigner l’URL directe d’une image</span>
-                </div>
-                <input
-                  type="url"
-                  value={editingCategory.image?.startsWith('data:') ? '' : editingCategory.image || ''}
-                  onChange={(e) =>
-                    setEditingCategory({ ...editingCategory, image: e.target.value })
-                  }
-                  placeholder="https://..."
-                  className="input-premium font-mono text-xs"
-                />
-              </div>
             </div>
 
             {/* Boutons de validation du formulaire */}
@@ -780,6 +841,8 @@ export default function CategoriesPage() {
                 onClick={() => {
                   setIsFormModalOpen(false);
                   setEditingCategory(null);
+                  setImageFile(null);
+                  setFormError(null);
                 }}
                 className="btn-secondary-soft text-xs"
               >
@@ -787,9 +850,14 @@ export default function CategoriesPage() {
               </button>
               <button
                 type="submit"
-                className="btn-primary-gradient text-xs"
+                disabled={isSaving}
+                className="btn-primary-gradient text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingCategory.id ? 'Enregistrer les modifications' : 'Créer la catégorie'}
+                {isSaving
+                  ? 'Enregistrement...'
+                  : editingCategory.id
+                  ? 'Enregistrer les modifications'
+                  : 'Créer la catégorie'}
               </button>
             </div>
           </form>

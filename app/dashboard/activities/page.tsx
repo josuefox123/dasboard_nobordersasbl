@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   CalendarCheck,
@@ -37,6 +37,61 @@ const DEFAULT_CATEGORIES = [
   'Événements Solidaires',
 ];
 
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+];
+
+const MONTHS_FR = [
+  { value: 'janvier', label: 'Janvier', num: '01', maxDays: 31 },
+  { value: 'février', label: 'Février', num: '02', maxDays: 29 },
+  { value: 'mars', label: 'Mars', num: '03', maxDays: 31 },
+  { value: 'avril', label: 'Avril', num: '04', maxDays: 30 },
+  { value: 'mai', label: 'Mai', num: '05', maxDays: 31 },
+  { value: 'juin', label: 'Juin', num: '06', maxDays: 30 },
+  { value: 'juillet', label: 'Juillet', num: '07', maxDays: 31 },
+  { value: 'août', label: 'Août', num: '08', maxDays: 31 },
+  { value: 'septembre', label: 'Septembre', num: '09', maxDays: 30 },
+  { value: 'octobre', label: 'Octobre', num: '10', maxDays: 31 },
+  { value: 'novembre', label: 'Novembre', num: '11', maxDays: 30 },
+  { value: 'décembre', label: 'Décembre', num: '12', maxDays: 31 },
+];
+
+function parseMonthAndDay(raw?: string): { month: string; day: string } {
+  if (!raw || !raw.trim()) return { month: '', day: '' };
+  const trimmed = raw.trim().toLowerCase();
+
+  // Format YYYY-MM-DD ou MM-DD
+  const isoMatch = /^(?:\d{4}-)?(\d{2})-(\d{2})$/.exec(trimmed);
+  if (isoMatch) {
+    const foundMonth = MONTHS_FR.find((m) => m.num === isoMatch[1]);
+    const dayNum = String( parseInt(isoMatch[2], 10) );
+    return {
+      month: foundMonth ? foundMonth.value : '',
+      day: dayNum,
+    };
+  }
+
+  // Format "15 juin" ou "15 juin 2025"
+  const foundMonth = MONTHS_FR.find((m) => trimmed.includes(m.value));
+  const dayMatch = /\b([1-9]|[12]\d|3[01])\b/.exec(trimmed);
+
+  return {
+    month: foundMonth ? foundMonth.value : '',
+    day: dayMatch ? dayMatch[1] : '',
+  };
+}
+
+function buildIsoDateFromMonthDay(monthValue: string, dayValue: string): string {
+  const m = MONTHS_FR.find((item) => item.value === monthValue);
+  if (!m || !dayValue) return '';
+  const year = new Date().getFullYear();
+  const paddedDay = String(dayValue).padStart(2, '0');
+  return `${year}-${m.num}-${paddedDay}`;
+}
+
 export default function ActivitiesPage() {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,6 +107,10 @@ export default function ActivitiesPage() {
   // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Partial<ActivityItem> | null>(null);
+  const [selectedMonth, setSelectedMonth] = useState<string>('');
+  const [selectedDay, setSelectedDay] = useState<string>('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id?: string; title: string; isBulk?: boolean } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -60,14 +119,32 @@ export default function ActivitiesPage() {
 
   // Images upload state in form
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const nativeDateInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingFiles, setIsUploadingFiles] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
 
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showNotification = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+    setNotice({ message: msg, type });
+    setTimeout(() => setNotice(null), 3500);
+  }, []);
+
+  const loadActivities = useCallback(async () => {
+    try {
+      const data = await apiClient.getActivities();
+      setActivities(data);
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du chargement des activités', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
 
   useEffect(() => {
     loadActivities();
-  }, []);
+  }, [loadActivities]);
 
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -78,21 +155,10 @@ export default function ActivitiesPage() {
     }
   }, [searchParams]);
 
-  async function loadActivities() {
-    try {
-      const data = await apiClient.getActivities();
-      setActivities(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const showNotification = (msg: string) => {
-    setNotice(msg);
-    setTimeout(() => setNotice(null), 3000);
-  };
-
   const handleOpenAdd = () => {
+    setFormError(null);
+    setSelectedMonth('');
+    setSelectedDay('');
     setEditingActivity({
       title: '',
       category: 'Ateliers Bambou',
@@ -106,7 +172,8 @@ export default function ActivitiesPage() {
     setIsFormModalOpen(true);
   };
 
-  const handleOpenEdit = (act: ActivityItem) => {
+  const handleOpenEdit = async (act: ActivityItem) => {
+    setFormError(null);
     const initialImages =
       act.images && act.images.length > 0
         ? [...act.images]
@@ -114,43 +181,104 @@ export default function ActivitiesPage() {
         ? [act.image]
         : [];
 
+    const initialDate = act.date || '';
+    const initialLocation = act.location || (act as any).lieu || '';
+    const parsed = parseMonthAndDay(initialDate);
+    setSelectedMonth(parsed.month);
+    setSelectedDay(parsed.day);
+
     setEditingActivity({
       ...act,
+      date: initialDate,
+      location: initialLocation,
       images: initialImages,
       image: initialImages[0] || '',
     });
     setIsFormModalOpen(true);
+
+    try {
+      const fresh = await apiClient.getActivityById(act.id);
+      const freshImages =
+        fresh.images && fresh.images.length > 0
+          ? [...fresh.images]
+          : fresh.image
+          ? [fresh.image]
+          : [];
+      const freshDate = fresh.date || '';
+      const freshLocation = fresh.location || (fresh as any).lieu || '';
+      const freshParsed = parseMonthAndDay(freshDate);
+      setSelectedMonth(freshParsed.month);
+      setSelectedDay(freshParsed.day);
+      setEditingActivity({
+        ...fresh,
+        date: freshDate,
+        location: freshLocation,
+        images: freshImages,
+        image: freshImages[0] || '',
+      });
+    } catch {
+      // Conserver les données locales si l'appel échoue
+    }
   };
 
-  const handleOpenDetail = (act: ActivityItem) => {
+  const handleOpenDetail = async (act: ActivityItem) => {
     setViewingActivity(act);
     setIsDetailModalOpen(true);
+    try {
+      const fresh = await apiClient.getActivityById(act.id);
+      setViewingActivity(fresh);
+    } catch {
+      // Conserver les données déjà affichées si la requête échoue
+    }
   };
 
-  // Image Upload Handlers (local files)
+  const updateDateFromMonthAndDay = (nextMonth: string, nextDay: string) => {
+    setSelectedMonth(nextMonth);
+    setSelectedDay(nextDay);
+    let formatted = '';
+    if (nextDay && nextMonth) {
+      formatted = `${nextDay} ${nextMonth}`;
+    } else if (nextMonth) {
+      formatted = nextMonth;
+    } else if (nextDay) {
+      formatted = nextDay;
+    }
+    setEditingActivity((prev) => (prev ? { ...prev, date: formatted } : prev));
+  };
+
+  // Image Upload Handlers (JPG, PNG, WEBP)
   const processImageFiles = (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
 
-    setIsUploadingFiles(true);
     const fileList = Array.from(files);
-    let loadedCount = 0;
-    const newImages: string[] = [];
-
-    fileList.forEach((file) => {
-      if (!file.type.startsWith('image/')) {
-        loadedCount++;
-        if (loadedCount === fileList.length) setIsUploadingFiles(false);
-        return;
+    const invalidFile = fileList.find(
+      (f) => !ALLOWED_IMAGE_TYPES.includes((f.type || '').toLowerCase()),
+    );
+    if (invalidFile) {
+      setFormError(
+        `Format non autorisé pour "${invalidFile.name}". Formats acceptés : JPG, PNG et WEBP.`,
+      );
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
       }
+      return;
+    }
 
+    setFormError(null);
+    setIsUploadingFiles(true);
+    let loadedCount = 0;
+    const newImages: string[] = new Array(fileList.length);
+
+    fileList.forEach((file, idx) => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
         if (result) {
-          newImages.push(result);
+          newImages[idx] = result;
         }
         loadedCount++;
         if (loadedCount === fileList.length) {
+          const validLoaded = newImages.filter(Boolean);
           setEditingActivity((prev) => {
             if (!prev) return prev;
             const currentImages =
@@ -159,7 +287,7 @@ export default function ActivitiesPage() {
                 : prev.image
                 ? [prev.image]
                 : [];
-            const merged = [...currentImages, ...newImages];
+            const merged = [...currentImages, ...validLoaded];
             return {
               ...prev,
               images: merged,
@@ -225,28 +353,44 @@ export default function ActivitiesPage() {
       images: editingActivity.images || [],
     };
 
-    await apiClient.saveActivity(finalItem as any);
-    await loadActivities();
-    setIsFormModalOpen(false);
-    const wasEditing = !!editingActivity.id;
-    setEditingActivity(null);
-    showNotification(
-      wasEditing ? 'Activité modifiée avec succès.' : 'Nouvelle activité ajoutée avec succès.'
-    );
+    try {
+      setIsSaving(true);
+      setFormError(null);
+      await apiClient.saveActivity(finalItem as any);
+      await loadActivities();
+      setIsFormModalOpen(false);
+      const wasEditing = !!editingActivity.id;
+      setEditingActivity(null);
+      showNotification(
+        wasEditing ? 'Activité modifiée avec succès.' : 'Nouvelle activité ajoutée avec succès.',
+        'success',
+      );
+    } catch (err: any) {
+      console.error(err);
+      setFormError(err?.message || 'Erreur lors de la sauvegarde de l’activité');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggleStatus = async (act: ActivityItem) => {
-    const updated = await apiClient.toggleActivityStatus(act.id);
-    if (updated) {
-      setActivities((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-      if (viewingActivity?.id === updated.id) {
-        setViewingActivity(updated);
+    try {
+      const updated = await apiClient.toggleActivityStatus(act.id);
+      if (updated) {
+        setActivities((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
+        if (viewingActivity?.id === updated.id) {
+          setViewingActivity(updated);
+        }
+        showNotification(
+          updated.status === 'active'
+            ? `Activité "${act.title}" activée.`
+            : `Activité "${act.title}" désactivée.`,
+          'success',
+        );
       }
-      showNotification(
-        updated.status === 'active'
-          ? `Activité "${act.title}" activée.`
-          : `Activité "${act.title}" désactivée.`
-      );
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du changement de statut', 'error');
     }
   };
 
@@ -281,7 +425,7 @@ export default function ActivitiesPage() {
           await apiClient.deleteActivity(id);
         }
         await loadActivities();
-        showNotification(`${selectedIds.length} activité(s) supprimée(s).`);
+        showNotification(`${selectedIds.length} activité(s) supprimée(s).`, 'success');
         setSelectedIds([]);
       } else if (deleteTarget.id) {
         await apiClient.deleteActivity(deleteTarget.id);
@@ -291,11 +435,12 @@ export default function ActivitiesPage() {
           setIsDetailModalOpen(false);
           setViewingActivity(null);
         }
-        showNotification(`Activité "${deleteTarget.title}" supprimée.`);
+        showNotification(`Activité "${deleteTarget.title}" supprimée.`, 'success');
       }
       setDeleteTarget(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showNotification(err?.message || 'Erreur lors de la suppression de l’activité', 'error');
     } finally {
       setIsDeleting(false);
     }
@@ -304,6 +449,12 @@ export default function ActivitiesPage() {
   const categories = Array.from(
     new Set([...DEFAULT_CATEGORIES, ...activities.map((a) => a.category).filter(Boolean)])
   ) as string[];
+
+  const maxDaysInSelectedMonth =
+    MONTHS_FR.find((m) => m.value === selectedMonth)?.maxDays ?? 31;
+  const daysOptions = Array.from({ length: maxDaysInSelectedMonth }, (_, i) =>
+    String(i + 1),
+  );
 
   const filteredActivities = activities.filter((act) => {
     const q = searchQuery.toLowerCase();
@@ -351,9 +502,19 @@ export default function ActivitiesPage() {
       </div>
 
       {notice && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{notice}</span>
+        <div
+          className={`p-3 rounded-2xl text-xs flex items-center gap-2 animate-fade-in border ${
+            notice.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <CheckCircle2
+            className={`w-4 h-4 shrink-0 ${
+              notice.type === 'error' ? 'text-rose-600' : 'text-emerald-600'
+            }`}
+          />
+          <span>{notice.message}</span>
         </div>
       )}
 
@@ -470,10 +631,12 @@ export default function ActivitiesPage() {
                     />
                   </th>
                   <th className="py-3.5 px-3 w-16">Visuel</th>
-                  <th className="py-3.5 px-4 max-w-xs md:max-w-sm">Titre</th>
-                  <th className="py-3.5 px-6 whitespace-nowrap">Catégorie</th>
-                  <th className="py-3.5 px-6 max-w-md">Description</th>
-                  <th className="py-3.5 px-6 whitespace-nowrap">Statut</th>
+                  <th className="py-3.5 px-4 max-w-[200px]">Titre</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Catégorie</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Date</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Lieu</th>
+                  <th className="py-3.5 px-4 w-56 max-w-[220px]">Description</th>
+                  <th className="py-3.5 px-4 whitespace-nowrap">Statut</th>
                   <th className="py-3.5 px-6 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
@@ -487,6 +650,10 @@ export default function ActivitiesPage() {
                       : act.image
                       ? [act.image]
                       : [];
+                  const shortDescription =
+                    act.description && act.description.length > 55
+                      ? `${act.description.slice(0, 55)}...`
+                      : act.description;
 
                   return (
                     <tr
@@ -530,39 +697,61 @@ export default function ActivitiesPage() {
                       </td>
 
                       {/* Titre */}
-                      <td className="py-4 px-4 max-w-xs md:max-w-sm">
+                      <td className="py-4 px-4 max-w-[200px]">
                         <p
-                          className="font-bold text-slate-900 text-sm leading-snug overflow-hidden text-ellipsis whitespace-nowrap cursor-default"
+                          className="font-bold text-slate-900 text-sm leading-snug truncate cursor-default"
                           title={act.title}
                         >
                           {act.title}
                         </p>
-                        {(act.date || act.location) && (
-                          <p className="text-[11px] text-slate-400 mt-0.5 truncate">
-                            {act.date} {act.location ? `• ${act.location}` : ''}
-                          </p>
-                        )}
                       </td>
 
                       {/* Catégorie */}
-                      <td className="py-4 px-6 whitespace-nowrap">
+                      <td className="py-4 px-4 whitespace-nowrap">
                         <span className="inline-block px-2.5 py-1 rounded-lg bg-[#E8F8F5] text-[#1F6F5C] font-bold text-[11px] border border-[#26B997]/25">
                           {act.category}
                         </span>
                       </td>
 
+                      {/* Date (Mois et Jour) */}
+                      <td className="py-4 px-4 whitespace-nowrap">
+                        {act.date ? (
+                          <span className="inline-flex items-center gap-1.5 text-slate-700 font-medium text-xs">
+                            <Calendar className="w-3.5 h-3.5 text-[#26B997] shrink-0" />
+                            <span>{act.date}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">—</span>
+                        )}
+                      </td>
+
+                      {/* Lieu */}
+                      <td className="py-4 px-4 whitespace-nowrap max-w-[160px]">
+                        {act.location ? (
+                          <span
+                            className="inline-flex items-center gap-1.5 text-slate-700 font-medium text-xs truncate max-w-full"
+                            title={act.location}
+                          >
+                            <MapPin className="w-3.5 h-3.5 text-[#26B997] shrink-0" />
+                            <span className="truncate">{act.location}</span>
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 text-xs italic">—</span>
+                        )}
+                      </td>
+
                       {/* Description tronquée avec points de suspension */}
-                      <td className="py-4 px-6 max-w-md">
+                      <td className="py-4 px-4 w-56 max-w-[220px]">
                         <p
-                          className="overflow-hidden text-ellipsis whitespace-nowrap text-slate-600 text-xs cursor-default leading-relaxed"
+                          className="truncate text-slate-600 text-xs cursor-default leading-relaxed"
                           title={act.description}
                         >
-                          {act.description}
+                          {shortDescription}
                         </p>
                       </td>
 
                       {/* Statut avec bouton bascule */}
-                      <td className="py-4 px-6 whitespace-nowrap">
+                      <td className="py-4 px-4 whitespace-nowrap">
                         <button
                           type="button"
                           onClick={() => handleToggleStatus(act)}
@@ -690,30 +879,28 @@ export default function ActivitiesPage() {
 
             {/* Titre */}
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Titre de l’activité
-              </label>
-              <div className="p-3.5 bg-[#E8F8F5]/50 border border-[#26B997]/25 rounded-xl">
-                <p className="font-bold text-base text-[#1F6F5C]">
-                  {viewingActivity.title}
-                </p>
-                {(viewingActivity.date || viewingActivity.location) && (
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-2 pt-2 border-t border-blue-100">
-                    {viewingActivity.date && (
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{viewingActivity.date}</span>
-                      </span>
-                    )}
-                    {viewingActivity.location && (
-                      <span className="flex items-center gap-1.5 font-medium">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{viewingActivity.location}</span>
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
+              </span>
+              <p className="font-bold text-base text-[#1F6F5C] break-words">
+                {viewingActivity.title}
+              </p>
+              {(viewingActivity.date || viewingActivity.location) && (
+                <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 mt-2">
+                  {viewingActivity.date && (
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <Calendar className="w-3.5 h-3.5 text-[#26B997]" />
+                      <span>{viewingActivity.date}</span>
+                    </span>
+                  )}
+                  {viewingActivity.location && (
+                    <span className="flex items-center gap-1.5 font-medium">
+                      <MapPin className="w-3.5 h-3.5 text-[#26B997]" />
+                      <span>{viewingActivity.location}</span>
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Galerie Photos */}
@@ -748,12 +935,12 @@ export default function ActivitiesPage() {
 
             {/* Description */}
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Description
-              </label>
-              <div className="p-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-normal shadow-xs">
+              </span>
+              <p className="text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-72 overflow-y-auto">
                 {viewingActivity.description}
-              </div>
+              </p>
             </div>
 
             {/* Dates */}
@@ -796,6 +983,7 @@ export default function ActivitiesPage() {
         onClose={() => {
           setIsFormModalOpen(false);
           setEditingActivity(null);
+          setFormError(null);
         }}
         title={editingActivity?.id ? 'Modifier l’activité' : 'Ajouter une nouvelle activité'}
         description="Renseignez les détails, la catégorie et les photos de l’activité"
@@ -803,6 +991,12 @@ export default function ActivitiesPage() {
       >
         {editingActivity && (
           <form onSubmit={handleSave} className="space-y-4">
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs leading-relaxed">
+                {formError}
+              </div>
+            )}
+
             {/* Titre */}
             <div>
               <label className="label-premium">
@@ -862,21 +1056,83 @@ export default function ActivitiesPage() {
               </div>
             </div>
 
-            {/* Date / Période & Lieu facultatifs */}
+            {/* Date (Mois et Jour) & Lieu */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="label-premium">
-                  Date ou Fréquence
+                  Date (Mois et Jour)
                 </label>
-                <input
-                  type="text"
-                  value={editingActivity.date || ''}
-                  onChange={(e) =>
-                    setEditingActivity({ ...editingActivity, date: e.target.value })
-                  }
-                  placeholder="Ex. 15 juin 2025 ou Tous les mercredis"
-                  className="input-premium"
-                />
+                <div className="flex items-center gap-2">
+                  <select
+                    value={selectedMonth}
+                    onChange={(e) => {
+                      const nextMonth = e.target.value;
+                      const maxDays =
+                        MONTHS_FR.find((m) => m.value === nextMonth)?.maxDays ?? 31;
+                      const adjustedDay =
+                        selectedDay && Number(selectedDay) > maxDays
+                          ? String(maxDays)
+                          : selectedDay;
+                      updateDateFromMonthAndDay(nextMonth, adjustedDay);
+                    }}
+                    className="input-premium font-medium cursor-pointer flex-1"
+                    aria-label="Mois de l'activité"
+                  >
+                    <option value="">Mois...</option>
+                    {MONTHS_FR.map((m) => (
+                      <option key={m.value} value={m.value}>
+                        {m.label}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={selectedDay}
+                    onChange={(e) =>
+                      updateDateFromMonthAndDay(selectedMonth, e.target.value)
+                    }
+                    className="input-premium font-medium cursor-pointer w-24"
+                    aria-label="Jour de l'activité"
+                  >
+                    <option value="">Jour...</option>
+                    {daysOptions.map((d) => (
+                      <option key={d} value={d}>
+                        {d.padStart(2, '0')}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div className="relative">
+                    <input
+                      ref={nativeDateInputRef}
+                      type="date"
+                      value={buildIsoDateFromMonthDay(selectedMonth, selectedDay)}
+                      onChange={(e) => {
+                        const parsed = parseMonthAndDay(e.target.value);
+                        updateDateFromMonthAndDay(parsed.month, parsed.day);
+                      }}
+                      className="sr-only"
+                      tabIndex={-1}
+                      aria-label="Sélecteur calendrier (mois et jour)"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (nativeDateInputRef.current) {
+                          if (typeof nativeDateInputRef.current.showPicker === 'function') {
+                            nativeDateInputRef.current.showPicker();
+                          } else {
+                            nativeDateInputRef.current.click();
+                          }
+                        }
+                      }}
+                      title="Choisir via le calendrier"
+                      className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-[#E8F8F5] text-slate-600 hover:text-[#1F6F5C] transition-colors shrink-0"
+                    >
+                      <Calendar className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
 
               <div>
@@ -921,7 +1177,7 @@ export default function ActivitiesPage() {
                     <span>Images & Photos d’illustration</span>
                   </label>
                   <p className="text-[11px] text-slate-500">
-                    Importez des photos depuis votre ordinateur. La première est utilisée comme couverture.
+                    Importez des photos depuis votre ordinateur (JPG, PNG, WEBP). La première est utilisée comme couverture.
                   </p>
                 </div>
                 <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full">
@@ -933,7 +1189,7 @@ export default function ActivitiesPage() {
                 ref={fileInputRef}
                 type="file"
                 multiple
-                accept="image/*"
+                accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp"
                 className="hidden"
                 onChange={(e) => {
                   if (e.target.files) processImageFiles(e.target.files);
@@ -974,7 +1230,7 @@ export default function ActivitiesPage() {
                         : 'Glissez des photos ici ou cliquez pour parcourir'}
                     </p>
                     <p className="text-[11px] text-slate-500 mt-0.5">
-                      Sélectionnez une ou plusieurs photos à la fois
+                      Sélectionnez une ou plusieurs photos à la fois (JPG, PNG, WEBP)
                     </p>
                   </div>
                   <button
@@ -1052,6 +1308,7 @@ export default function ActivitiesPage() {
                 onClick={() => {
                   setIsFormModalOpen(false);
                   setEditingActivity(null);
+                  setFormError(null);
                 }}
                 className="btn-secondary-soft text-xs"
               >
@@ -1059,9 +1316,14 @@ export default function ActivitiesPage() {
               </button>
               <button
                 type="submit"
-                className="btn-primary-gradient text-xs"
+                disabled={isSaving}
+                className="btn-primary-gradient text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingActivity?.id ? 'Enregistrer les modifications' : 'Créer l’activité'}
+                {isSaving
+                  ? 'Enregistrement...'
+                  : editingActivity?.id
+                  ? 'Enregistrer les modifications'
+                  : 'Créer l’activité'}
               </button>
             </div>
           </form>

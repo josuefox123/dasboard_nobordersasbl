@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Milestone,
@@ -23,6 +23,11 @@ import { Pagination } from '@/components/ui/Pagination';
 import { BatchActionBar } from '@/components/ui/BatchActionBar';
 import { DeleteConfirmModal } from '@/components/ui/DeleteConfirmModal';
 
+const DEFAULT_PERIODS = [
+  ...Array.from({ length: 2026 - 1999 }, (_, i) => `${1999 + i}-${1999 + i + 1}`),
+  '2026-Présent',
+];
+
 export default function ParcoursPage() {
   const [parcoursList, setParcoursList] = useState<ParcoursItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,17 +42,36 @@ export default function ParcoursPage() {
   // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<ParcoursItem> | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id?: string; title: string; isBulk?: boolean } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [viewingItem, setViewingItem] = useState<ParcoursItem | null>(null);
 
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showNotification = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+    setNotice({ message: msg, type });
+    setTimeout(() => setNotice(null), 3500);
+  }, []);
+
+  const loadParcours = useCallback(async () => {
+    try {
+      const data = await apiClient.getParcours();
+      setParcoursList(data);
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du chargement des parcours', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
 
   useEffect(() => {
     loadParcours();
-  }, []);
+  }, [loadParcours]);
 
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -58,21 +82,8 @@ export default function ParcoursPage() {
     }
   }, [searchParams]);
 
-  async function loadParcours() {
-    try {
-      const data = await apiClient.getParcours();
-      setParcoursList(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const showNotification = (msg: string) => {
-    setNotice(msg);
-    setTimeout(() => setNotice(null), 3000);
-  };
-
   const handleOpenAdd = () => {
+    setFormError(null);
     setEditingItem({
       title: '',
       description: '',
@@ -83,6 +94,7 @@ export default function ParcoursPage() {
   };
 
   const handleOpenEdit = (item: ParcoursItem) => {
+    setFormError(null);
     setEditingItem({ ...item });
     setIsFormModalOpen(true);
   };
@@ -94,32 +106,55 @@ export default function ParcoursPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingItem || !editingItem.title?.trim()) return;
+    if (
+      !editingItem ||
+      !editingItem.title?.trim() ||
+      !editingItem.period?.trim() ||
+      !editingItem.description?.trim()
+    ) {
+      return;
+    }
 
-    await apiClient.saveParcours(editingItem as any);
-    await loadParcours();
-    setIsFormModalOpen(false);
-    const wasEditing = !!editingItem.id;
-    setEditingItem(null);
-    showNotification(
-      wasEditing
-        ? 'Élément de parcours modifié avec succès.'
-        : 'Nouvel élément de parcours ajouté avec succès.'
-    );
+    try {
+      setIsSaving(true);
+      setFormError(null);
+      await apiClient.saveParcours(editingItem as any);
+      await loadParcours();
+      setIsFormModalOpen(false);
+      const wasEditing = !!editingItem.id;
+      setEditingItem(null);
+      showNotification(
+        wasEditing
+          ? 'Élément de parcours modifié avec succès.'
+          : 'Nouvel élément de parcours ajouté avec succès.',
+        'success',
+      );
+    } catch (err: any) {
+      console.error(err);
+      setFormError(err?.message || 'Erreur lors de la sauvegarde du parcours');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggleStatus = async (item: ParcoursItem) => {
-    const updated = await apiClient.toggleParcoursStatus(item.id);
-    if (updated) {
-      setParcoursList((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      if (viewingItem?.id === updated.id) {
-        setViewingItem(updated);
+    try {
+      const updated = await apiClient.toggleParcoursStatus(item.id);
+      if (updated) {
+        setParcoursList((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+        if (viewingItem?.id === updated.id) {
+          setViewingItem(updated);
+        }
+        showNotification(
+          updated.status === 'active'
+            ? `Parcours "${item.title}" activé.`
+            : `Parcours "${item.title}" désactivé.`,
+          'success',
+        );
       }
-      showNotification(
-        updated.status === 'active'
-          ? `Parcours "${item.title}" activé.`
-          : `Parcours "${item.title}" désactivé.`
-      );
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du changement de statut', 'error');
     }
   };
 
@@ -154,7 +189,7 @@ export default function ParcoursPage() {
           await apiClient.deleteParcours(id);
         }
         await loadParcours();
-        showNotification(`${selectedIds.length} parcours supprimé(s).`);
+        showNotification(`${selectedIds.length} parcours supprimé(s).`, 'success');
         setSelectedIds([]);
       } else if (deleteTarget.id) {
         await apiClient.deleteParcours(deleteTarget.id);
@@ -164,15 +199,23 @@ export default function ParcoursPage() {
           setIsDetailModalOpen(false);
           setViewingItem(null);
         }
-        showNotification(`Parcours "${deleteTarget.title}" supprimé.`);
+        showNotification(`Parcours "${deleteTarget.title}" supprimé.`, 'success');
       }
       setDeleteTarget(null);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      showNotification(err?.message || 'Erreur lors de la suppression du parcours', 'error');
     } finally {
       setIsDeleting(false);
     }
   };
+
+  const periodOptions = Array.from(
+    new Set([
+      ...DEFAULT_PERIODS,
+      ...parcoursList.map((p) => p.period).filter(Boolean),
+    ]),
+  ) as string[];
 
   const filteredParcours = parcoursList.filter((item) => {
     const q = searchQuery.toLowerCase();
@@ -213,9 +256,19 @@ export default function ParcoursPage() {
       </div>
 
       {notice && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{notice}</span>
+        <div
+          className={`p-3 border rounded-2xl text-xs flex items-center gap-2 animate-fade-in ${
+            notice.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <CheckCircle2
+            className={`w-4 h-4 shrink-0 ${
+              notice.type === 'error' ? 'text-rose-600' : 'text-emerald-600'
+            }`}
+          />
+          <span>{notice.message}</span>
         </div>
       )}
 
@@ -563,6 +616,7 @@ export default function ParcoursPage() {
         onClose={() => {
           setIsFormModalOpen(false);
           setEditingItem(null);
+          setFormError(null);
         }}
         title={editingItem?.id ? 'Modifier le parcours' : 'Ajouter un parcours'}
         description="Renseignez le titre, la période ou année et la description du parcours"
@@ -570,6 +624,12 @@ export default function ParcoursPage() {
       >
         {editingItem && (
           <form onSubmit={handleSave} className="space-y-4">
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs leading-relaxed">
+                {formError}
+              </div>
+            )}
+
             {/* Champ 1 : Titre */}
             <div>
               <label className="label-premium">
@@ -594,29 +654,23 @@ export default function ParcoursPage() {
                 <label className="label-premium">
                   Année / Période du parcours <span className="text-rose-500">*</span>
                 </label>
-                <input
-                  type="text"
+                <select
                   required
                   value={editingItem.period || ''}
                   onChange={(e) =>
                     setEditingItem({ ...editingItem, period: e.target.value })
                   }
-                  placeholder="Ex. 2022–2023 ou 2024–Présent"
-                  className="input-premium font-medium"
-                />
-                <div className="flex flex-wrap items-center gap-1.5 mt-2">
-                  <span className="text-[10px] text-slate-400">Suggestions :</span>
-                  {['2024–Présent', '2023–2024', '2022–2023', '2020–2021'].map((suggestion) => (
-                    <button
-                      key={suggestion}
-                      type="button"
-                      onClick={() => setEditingItem({ ...editingItem, period: suggestion })}
-                      className="text-[10px] px-2 py-0.5 rounded-md bg-slate-100 hover:bg-[#E8F8F5] hover:text-[#26B997] text-slate-600 font-mono transition-colors"
-                    >
-                      {suggestion}
-                    </button>
+                  className="input-premium font-medium cursor-pointer"
+                >
+                  <option value="" disabled>
+                    Sélectionner une période...
+                  </option>
+                  {periodOptions.map((period) => (
+                    <option key={period} value={period}>
+                      {period}
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               <div>
@@ -642,10 +696,11 @@ export default function ParcoursPage() {
             {/* Champ 3 : Description */}
             <div>
               <label className="label-premium">
-                Description détaillée
+                Description détaillée <span className="text-rose-500">*</span>
               </label>
               <textarea
                 rows={5}
+                required
                 value={editingItem.description || ''}
                 onChange={(e) =>
                   setEditingItem({ ...editingItem, description: e.target.value })
@@ -662,6 +717,7 @@ export default function ParcoursPage() {
                 onClick={() => {
                   setIsFormModalOpen(false);
                   setEditingItem(null);
+                  setFormError(null);
                 }}
                 className="btn-secondary-soft text-xs"
               >
@@ -669,9 +725,14 @@ export default function ParcoursPage() {
               </button>
               <button
                 type="submit"
-                className="btn-primary-gradient text-xs"
+                disabled={isSaving}
+                className="btn-primary-gradient text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingItem.id ? 'Enregistrer les modifications' : 'Créer le parcours'}
+                {isSaving
+                  ? 'Enregistrement...'
+                  : editingItem.id
+                  ? 'Enregistrer les modifications'
+                  : 'Créer le parcours'}
               </button>
             </div>
           </form>

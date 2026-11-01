@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   HelpCircle,
@@ -49,17 +49,36 @@ export default function FaqsPage() {
   // Modals state
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [editingFaq, setEditingFaq] = useState<Partial<FaqItem> | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<{ id?: string; title: string; isBulk?: boolean } | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [viewingFaq, setViewingFaq] = useState<FaqItem | null>(null);
 
-  const [notice, setNotice] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showNotification = useCallback((msg: string, type: 'success' | 'error' = 'success') => {
+    setNotice({ message: msg, type });
+    setTimeout(() => setNotice(null), 3500);
+  }, []);
+
+  const loadFaqs = useCallback(async () => {
+    try {
+      const data = await apiClient.getFaqs();
+      setFaqs(data);
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du chargement des FAQs', 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [showNotification]);
 
   useEffect(() => {
     loadFaqs();
-  }, []);
+  }, [loadFaqs]);
 
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -70,21 +89,8 @@ export default function FaqsPage() {
     }
   }, [searchParams]);
 
-  async function loadFaqs() {
-    try {
-      const data = await apiClient.getFaqs();
-      setFaqs(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const showNotification = (msg: string) => {
-    setNotice(msg);
-    setTimeout(() => setNotice(null), 3000);
-  };
-
   const handleOpenAdd = () => {
+    setFormError(null);
     setEditingFaq({
       question: '',
       answer: '',
@@ -95,6 +101,7 @@ export default function FaqsPage() {
   };
 
   const handleOpenEdit = (faq: FaqItem) => {
+    setFormError(null);
     setEditingFaq({ ...faq });
     setIsFormModalOpen(true);
   };
@@ -108,26 +115,44 @@ export default function FaqsPage() {
     e.preventDefault();
     if (!editingFaq || !editingFaq.question?.trim() || !editingFaq.answer?.trim()) return;
 
-    await apiClient.saveFaq(editingFaq as any);
-    await loadFaqs();
-    setIsFormModalOpen(false);
-    const wasEditing = !!editingFaq.id;
-    setEditingFaq(null);
-    showNotification(wasEditing ? 'FAQ modifiée avec succès.' : 'Nouvelle FAQ ajoutée avec succès.');
+    try {
+      setIsSaving(true);
+      setFormError(null);
+      await apiClient.saveFaq(editingFaq as any);
+      await loadFaqs();
+      setIsFormModalOpen(false);
+      const wasEditing = !!editingFaq.id;
+      setEditingFaq(null);
+      showNotification(
+        wasEditing ? 'FAQ modifiée avec succès.' : 'Nouvelle FAQ ajoutée avec succès.',
+        'success',
+      );
+    } catch (err: any) {
+      console.error(err);
+      setFormError(err?.message || 'Erreur lors de la sauvegarde de la FAQ');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleToggleStatus = async (faq: FaqItem) => {
-    const updated = await apiClient.toggleFaqStatus(faq.id);
-    if (updated) {
-      setFaqs((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
-      if (viewingFaq?.id === updated.id) {
-        setViewingFaq(updated);
+    try {
+      const updated = await apiClient.toggleFaqStatus(faq.id);
+      if (updated) {
+        setFaqs((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+        if (viewingFaq?.id === updated.id) {
+          setViewingFaq(updated);
+        }
+        showNotification(
+          updated.status === 'active'
+            ? `FAQ "${faq.question.slice(0, 30)}..." activée.`
+            : `FAQ "${faq.question.slice(0, 30)}..." désactivée.`,
+          'success',
+        );
       }
-      showNotification(
-        updated.status === 'active'
-          ? `FAQ "${faq.question.slice(0, 30)}..." activée.`
-          : `FAQ "${faq.question.slice(0, 30)}..." désactivée.`
-      );
+    } catch (err: any) {
+      console.error(err);
+      showNotification(err?.message || 'Erreur lors du changement de statut', 'error');
     }
   };
 
@@ -231,9 +256,19 @@ export default function FaqsPage() {
       </div>
 
       {notice && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{notice}</span>
+        <div
+          className={`p-3 border rounded-2xl text-xs flex items-center gap-2 animate-fade-in ${
+            notice.type === 'error'
+              ? 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+          }`}
+        >
+          <CheckCircle2
+            className={`w-4 h-4 shrink-0 ${
+              notice.type === 'error' ? 'text-rose-600' : 'text-emerald-600'
+            }`}
+          />
+          <span>{notice.message}</span>
         </div>
       )}
 
@@ -523,26 +558,23 @@ export default function FaqsPage() {
 
             {/* Question */}
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Question
-              </label>
-              <div className="p-3.5 bg-[#E8F8F5]/50 border border-[#26B997]/25 rounded-xl">
-                <p className="font-bold text-sm text-[#1F6F5C] leading-relaxed">
-                  {viewingFaq.question}
-                </p>
-              </div>
+              </span>
+              <p className="font-bold text-sm text-[#1F6F5C] leading-relaxed break-words">
+                {viewingFaq.question}
+              </p>
             </div>
 
             {/* Réponse */}
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Réponse
-              </label>
-              <div className="p-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-normal shadow-xs">
+              </span>
+              <p className="text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-72 overflow-y-auto">
                 {viewingFaq.answer}
-              </div>
+              </p>
             </div>
-
             {/* Dates */}
             {(viewingFaq.createdAt || viewingFaq.updatedAt) && (
               <div className="text-[11px] text-slate-400 font-mono flex items-center justify-between pt-2 border-t border-slate-100">
@@ -590,6 +622,12 @@ export default function FaqsPage() {
       >
         {editingFaq && (
           <form onSubmit={handleSave} className="space-y-4">
+            {formError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs leading-relaxed">
+                {formError}
+              </div>
+            )}
+
             <div>
               <label className="label-premium">
                 Question <span className="text-rose-500">*</span>
@@ -669,6 +707,7 @@ export default function FaqsPage() {
                 onClick={() => {
                   setIsFormModalOpen(false);
                   setEditingFaq(null);
+                  setFormError(null);
                 }}
                 className="btn-secondary-soft text-xs"
               >
@@ -676,9 +715,14 @@ export default function FaqsPage() {
               </button>
               <button
                 type="submit"
-                className="btn-primary-gradient text-xs"
+                disabled={isSaving}
+                className="btn-primary-gradient text-xs disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {editingFaq?.id ? 'Enregistrer les modifications' : 'Créer la FAQ'}
+                {isSaving
+                  ? 'Enregistrement...'
+                  : editingFaq?.id
+                  ? 'Enregistrer les modifications'
+                  : 'Créer la FAQ'}
               </button>
             </div>
           </form>

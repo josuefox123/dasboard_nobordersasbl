@@ -1,4 +1,4 @@
-import {
+﻿import {
   Product,
   Order,
   Customer,
@@ -7,7 +7,6 @@ import {
   ContactMessage,
   FaqItem,
   ActivityItem,
-  NewsItem,
   PressItem,
   PartnerItem,
   CategoryItem,
@@ -835,74 +834,6 @@ export const initialActivities: ActivityItem[] = [
   },
 ];
 
-export const initialNews: NewsItem[] = [
-  {
-    id: 'news-001',
-    title: 'Inauguration de notre nouvel atelier d’éco-mobilité à Bruxelles',
-    category: 'Vie de l’ASBL',
-    description: 'No Borders ASBL a inauguré ce week-end son nouvel espace d’artisanat durable dédié à la fabrication des cadres en bambou et à la maintenance de vélos adaptés en présence des acteurs associatifs locaux.',
-    status: 'active',
-    image: 'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1507035895480-2b3156c31fc8?auto=format&fit=crop&w=800&q=80',
-      'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80',
-    ],
-    createdAt: '2025-04-18',
-    updatedAt: '2025-04-18',
-  },
-  {
-    id: 'news-002',
-    title: 'Partenariat avec Bruxelles Mobilité pour l’inclusion cycliste',
-    category: 'Partenariats',
-    description: 'Grâce au soutien de la Région, 10 nouveaux tandems adaptés Hase Pino ont été mis à disposition des personnes malvoyantes et à mobilité réduite pour les sorties collectives de la saison estivale.',
-    status: 'active',
-    image: 'https://images.unsplash.com/photo-1471506480208-91b3a4cc78be?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1471506480208-91b3a4cc78be?auto=format&fit=crop&w=800&q=80',
-    ],
-    createdAt: '2025-04-05',
-    updatedAt: '2025-04-10',
-  },
-  {
-    id: 'news-003',
-    title: 'Lancement de la campagne de dons 2025 : objectif 20 vélos adaptés',
-    category: 'Projets Solidaires',
-    description: 'Aidez-nous à financer l’achat et l’équipement de matériel adapté pour les jeunes bénéficiaires. Tout don dès 40 € bénéficie de la déduction fiscale belge de 45 % avec attestation automatique.',
-    status: 'active',
-    image: 'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1532298229144-0ec0c57515c7?auto=format&fit=crop&w=800&q=80',
-    ],
-    createdAt: '2025-03-22',
-    updatedAt: '2025-03-22',
-  },
-  {
-    id: 'news-004',
-    title: 'Succès pour le premier stage d’auto-construction de cadre en bambou',
-    category: 'Ateliers & Formations',
-    description: 'Six participants ont conçu et finalisé leur cadre de gravel en bambou lors d’une session intensive de 4 jours, alliant robustesse mécanique et respect total de l’environnement.',
-    status: 'active',
-    image: 'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1511994298241-608e28f14fde?auto=format&fit=crop&w=800&q=80',
-    ],
-    createdAt: '2025-03-15',
-    updatedAt: '2025-03-16',
-  },
-  {
-    id: 'news-005',
-    title: 'Reportage télévisé sur l’innovation sociale par le vélo',
-    category: 'Presse & Médias',
-    description: 'Les caméras de la télévision régionale sont venues filmer une sortie tandem sur les berges du canal pour mettre en lumière l’impact positif du vélo adapté sur la santé mentale et le lien social.',
-    status: 'inactive',
-    image: 'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80',
-    images: [
-      'https://images.unsplash.com/photo-1485965120184-e220f721d03e?auto=format&fit=crop&w=800&q=80',
-    ],
-    createdAt: '2025-02-28',
-    updatedAt: '2025-02-28',
-  },
-];
 
 export const initialPressItems: PressItem[] = [
   {

@@ -31,25 +31,6 @@ export default function AuthLayout({
           {children}
         </div>
       </main>
-
-      {/* Minimalist Footer */}
-      <footer className="w-full py-6 px-4 text-center">
-        <div className="flex items-center justify-center gap-6 text-xs text-slate-400">
-          <Link
-            href="#"
-            className="hover:text-slate-600 transition-colors"
-          >
-            Conditions d&apos;utilisation
-          </Link>
-          <span className="w-1 h-1 rounded-full bg-slate-300" aria-hidden="true" />
-          <Link
-            href="#"
-            className="hover:text-slate-600 transition-colors"
-          >
-            Politique de confidentialité
-          </Link>
-        </div>
-      </footer>
     </div>
   );
 }

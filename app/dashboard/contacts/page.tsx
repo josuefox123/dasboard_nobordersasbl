@@ -1,6 +1,6 @@
-'use client';
+﻿'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
 import {
   Mail,
@@ -42,9 +42,22 @@ export default function ContactsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
+  const loadMessages = useCallback(async () => {
+    try {
+      const data = await apiClient.getContactMessages();
+      setMessages(data);
+    } catch (err: any) {
+      console.error('Erreur lors du chargement des messages:', err);
+      setNotice(err?.message || 'Erreur lors du chargement des messages');
+      setTimeout(() => setNotice(null), 3500);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     loadMessages();
-  }, []);
+  }, [loadMessages]);
 
   const searchParams = useSearchParams();
   useEffect(() => {
@@ -55,24 +68,22 @@ export default function ContactsPage() {
     }
   }, [searchParams]);
 
-  async function loadMessages() {
-    try {
-      const data = await apiClient.getContactMessages();
-      setMessages(data);
-    } finally {
-      setLoading(false);
-    }
-  }
-
   const handleOpenDetail = async (msg: ContactMessage) => {
     setSelectedMessage(msg);
     setIsDetailOpen(true);
 
     if (msg.status === 'unread') {
-      await apiClient.markContactMessageAsRead(msg.id);
-      setMessages((prev) =>
-        prev.map((m) => (m.id === msg.id ? { ...m, status: 'read' } : m))
-      );
+      try {
+        const updated = await apiClient.markContactMessageAsRead(msg.id);
+        if (updated) {
+          setSelectedMessage(updated);
+        }
+        setMessages((prev) =>
+          prev.map((m) => (m.id === msg.id ? { ...m, status: 'read' } : m))
+        );
+      } catch (err) {
+        console.error('Erreur lors du marquage comme lu:', err);
+      }
     }
   };
 
@@ -337,7 +348,7 @@ export default function ContactsPage() {
                       <td className="py-4 px-4 whitespace-nowrap">
                         <div className="flex items-center gap-3">
                           <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 ${
+                            className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs shrink-0 ${
                               isUnread
                                 ? 'bg-[#26B997] text-white shadow-xs'
                                 : 'bg-slate-100 text-slate-600'
@@ -447,7 +458,7 @@ export default function ContactsPage() {
             {/* Infos Expéditeur */}
             <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-[#26B997] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
+                <div className="w-11 h-11 rounded-full bg-[#26B997] text-white flex items-center justify-center font-bold text-sm shrink-0 shadow-sm">
                   {selectedMessage.name
                     .split(' ')
                     .map((n) => n[0])
@@ -478,27 +489,25 @@ export default function ContactsPage() {
             </div>
 
             {/* Motif */}
+            {/* Motif */}
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Motif de la demande
-              </label>
-              <div className="p-3 bg-[#E8F8F5]/50 border border-[#26B997]/25 rounded-xl">
-                <p className="font-bold text-sm text-[#1F6F5C]">
-                  {selectedMessage.subject}
-                </p>
-              </div>
+              </span>
+              <p className="font-bold text-sm text-[#1F6F5C] break-words">
+                {selectedMessage.subject}
+              </p>
             </div>
 
             {/* Contenu complet du Message */}
             <div>
-              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                 Message complet
-              </label>
-              <div className="p-4 rounded-2xl bg-white border border-slate-200 text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap font-normal shadow-xs">
+              </span>
+              <p className="text-slate-700 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words [overflow-wrap:anywhere] max-h-72 overflow-y-auto">
                 {selectedMessage.message}
-              </div>
+              </p>
             </div>
-
             {/* Actions de la modal */}
             <div className="pt-4 border-t border-slate-100 flex flex-wrap items-center justify-between gap-3">
               <button
