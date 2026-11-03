@@ -18,6 +18,11 @@ import {
   OverviewMetrics,
   PaymentStatus,
   ShippingStatus,
+  PermissionItem,
+  PaginatedPermissionsResult,
+  RoleItem,
+  CreateRolePayload,
+  UpdateRolePayload,
 } from '@/types/dashboard';
 
 import {
@@ -61,10 +66,24 @@ export function getMediaUrl(path?: string | null): string {
   return `${origin}${cleanPath}`;
 }
 
+const LIVE_API_STORAGE_KEYS = new Set([
+  'products',
+  'product_categories',
+  'faqs',
+  'contact_messages',
+  'press_items',
+  'activities',
+  'contents',
+]);
+
 // Helper to access localStorage safely on the client
 function getStorageItem<T>(key: string, defaultValue: T): T {
   if (typeof window === 'undefined') return defaultValue;
   try {
+    if (LIVE_API_STORAGE_KEYS.has(key)) {
+      window.localStorage.removeItem(`nb_admin_${key}`);
+      return defaultValue;
+    }
     const item = window.localStorage.getItem(`nb_admin_${key}`);
     return item ? JSON.parse(item) : defaultValue;
   } catch {
@@ -81,6 +100,10 @@ function getCookie(name: string): string | null {
 function setStorageItem<T>(key: string, value: T): void {
   if (typeof window === 'undefined') return;
   try {
+    if (LIVE_API_STORAGE_KEYS.has(key)) {
+      window.localStorage.removeItem(`nb_admin_${key}`);
+      return;
+    }
     window.localStorage.setItem(`nb_admin_${key}`, JSON.stringify(value));
   } catch (error) {
     console.warn('Storage write failed', error);
@@ -2737,28 +2760,162 @@ export const apiClient = {
     return allPayments.find((p) => p.id === id || p.reference === id) || null;
   },
 
-  // UTILISATEURS & PERMISSIONS
+  // UTILISATEURS & PERMISSIONS (Connecté à l'API Backend)
   async getUsers(): Promise<DashboardUser[]> {
-    return getStorageItem<DashboardUser[]>('users', initialUsers);
+    const res = await this.requestWithAuth(`${this.apiBaseUrl}/users`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Erreur lors de la récupération des utilisateurs (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    const rawList = Array.isArray(data) ? data : data?.data || [];
+    return rawList.map((u: any) => ({
+      id: u.id,
+      nom: u.nom,
+      prenom: u.prenom,
+      name: u.name || `${u.prenom || ''} ${u.nom || ''}`.trim() || u.email,
+      email: u.email,
+      role: u.role,
+      roleLabel:
+        u.roleLabel ||
+        (u.role === 'SUPER_ADMIN' ? 'Super Administrateur' : 'Utilisateur'),
+      status: String(u.status || 'ACTIVE').toLowerCase(),
+      permissions: u.permissions || [],
+      avatar: u.profilePhotoUrl ? getMediaUrl(u.profilePhotoUrl) : undefined,
+      activeRole: u.activeRole || null,
+      invitation: u.invitation || null,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    })) as DashboardUser[];
+  },
+
+  async getUser(id: string): Promise<DashboardUser> {
+    const res = await this.requestWithAuth(`${this.apiBaseUrl}/users/${id}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Utilisateur introuvable (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    const u = data;
+    return {
+      id: u.id,
+      nom: u.nom,
+      prenom: u.prenom,
+      name: u.name || `${u.prenom || ''} ${u.nom || ''}`.trim() || u.email,
+      email: u.email,
+      role: u.role,
+      roleLabel:
+        u.roleLabel ||
+        (u.role === 'SUPER_ADMIN' ? 'Super Administrateur' : 'Utilisateur'),
+      status: String(u.status || 'ACTIVE').toLowerCase(),
+      permissions: u.permissions || [],
+      avatar: u.profilePhotoUrl ? getMediaUrl(u.profilePhotoUrl) : undefined,
+      activeRole: u.activeRole || null,
+      invitation: u.invitations?.[0] || u.invitation || null,
+      createdAt: u.createdAt,
+      updatedAt: u.updatedAt,
+    } as DashboardUser;
+  },
+
+  /**
+   * Création d'un utilisateur avec envoi d'invitation (POST /invitations)
+   */
+  async createAdminInvitation(payload: {
+    nom: string;
+    prenom: string;
+    email: string;
+    role_id: string;
+  }): Promise<{ message: string; invitation?: any; email_sent?: boolean }> {
+    const res = await this.requestWithAuth(`${this.apiBaseUrl}/invitations`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Erreur lors de la création de l'invitation (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    return data;
+  },
+
+  /**
+   * Renvoi d'un e-mail d'invitation à un utilisateur en attente d'activation (POST /invitations/resend)
+   */
+  async resendInvitation(payload: {
+    email?: string;
+    userId?: string;
+    invitationId?: string;
+  }): Promise<{ message: string; invitation_id?: string }> {
+    const res = await this.requestWithAuth(
+      `${this.apiBaseUrl}/invitations/resend`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(payload),
+      },
+    );
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Erreur lors du renvoi de l'invitation (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    return data;
   },
 
   async updateUserRole(id: string, role: DashboardUser['role'], status: DashboardUser['status']): Promise<DashboardUser | null> {
-    const users = getStorageItem<DashboardUser[]>('users', initialUsers);
-    const user = users.find((u) => u.id === id);
-    if (user) {
-      user.role = role;
-      user.status = status;
-      user.roleLabel =
-        role === 'super_admin'
-          ? 'Super Administrateur'
-          : role === 'manager'
-          ? 'Gestionnaire Boutique & Stocks'
-          : role === 'treasurer'
-          ? 'Trésorier & Dons'
-          : 'Rédacteur Web & Événements';
-      setStorageItem('users', users);
-      return user;
-    }
     return null;
   },
 
@@ -3164,6 +3321,20 @@ export const apiClient = {
     prenom: string;
     email: string;
     role: string;
+    role_label?: string;
+    roleLabel?: string;
+    role_item?: {
+      id: string;
+      name: string;
+      label: string;
+      description?: string | null;
+    } | null;
+    roleItem?: {
+      id: string;
+      name: string;
+      label: string;
+      description?: string | null;
+    } | null;
     statut_compte?: string;
     is_verified?: boolean;
     profile_photo_url?: string | null;
@@ -3799,6 +3970,190 @@ export const apiClient = {
     this.clearSessionCache();
 
     return data;
+  },
+
+  /**
+   * Récupère la liste paginée des permissions pour le Super Administrateur (GET /super-admin/permissions).
+   * Accepte page, limit, search, et module.
+   */
+  async getPermissions(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    module?: string;
+  }): Promise<PaginatedPermissionsResult> {
+    const query = new URLSearchParams();
+    if (params?.page) query.set('page', String(params.page));
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.search && params.search.trim()) query.set('search', params.search.trim());
+    if (params?.module && params.module.trim() && params.module !== 'all') {
+      query.set('module', params.module.trim());
+    }
+
+    const queryString = query.toString();
+    const url = `${this.apiBaseUrl}/super-admin/permissions${queryString ? `?${queryString}` : ''}`;
+    const res = await this.requestWithAuth(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        (res.status === 403
+          ? 'Cette opération est strictement réservée au Super Administrateur.'
+          : res.status === 401
+          ? 'Session expirée ou utilisateur non authentifié.'
+          : `Erreur lors de la récupération des permissions (${res.status})`);
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    return data;
+  },
+
+  /**
+   * Récupère la liste de tous les rôles avec leurs permissions (GET /roles).
+   */
+  async getRoles(): Promise<RoleItem[]> {
+    const res = await this.requestWithAuth(`${this.apiBaseUrl}/roles`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Erreur lors de la récupération des rôles (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    return (data?.data || []) as RoleItem[];
+  },
+
+  /**
+   * Consulte les détails d'un rôle spécifique (GET /roles/:id).
+   */
+  async getRole(id: string): Promise<RoleItem> {
+    const res = await this.requestWithAuth(`${this.apiBaseUrl}/roles/${id}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Rôle introuvable (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    return (data?.data || data) as RoleItem;
+  },
+
+  /**
+   * Crée un rôle avec ses permissions associées (POST /roles).
+   */
+  async createRole(payload: CreateRolePayload): Promise<RoleItem> {
+    const res = await this.requestWithAuth(`${this.apiBaseUrl}/roles`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Erreur lors de la création du rôle (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    return (data?.data || data) as RoleItem;
+  },
+
+  /**
+   * Modifie un rôle et resynchronise ses permissions (PATCH /roles/:id).
+   */
+  async updateRole(id: string, payload: UpdateRolePayload): Promise<RoleItem> {
+    const res = await this.requestWithAuth(`${this.apiBaseUrl}/roles/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Erreur lors de la mise à jour du rôle (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    return (data?.data || data) as RoleItem;
+  },
+
+  /**
+   * Supprime un rôle (DELETE /roles/:id).
+   */
+  async deleteRole(id: string): Promise<{ success: boolean; message: string }> {
+    const res = await this.requestWithAuth(`${this.apiBaseUrl}/roles/${id}`, {
+      method: 'DELETE',
+      headers: { Accept: 'application/json' },
+    });
+
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok) {
+      const errorMessage =
+        (data && (data.message || data.error)) ||
+        `Erreur lors de la suppression du rôle (${res.status})`;
+      const formattedMessage = Array.isArray(errorMessage)
+        ? errorMessage.join(', ')
+        : errorMessage;
+      const error: any = new Error(formattedMessage);
+      error.status = res.status;
+      throw error;
+    }
+
+    return data || { success: true, message: 'Rôle supprimé avec succès.' };
   },
 };
 

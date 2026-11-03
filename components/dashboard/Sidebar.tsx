@@ -20,6 +20,8 @@ import {
   Mail,
   HelpCircle,
   ShieldCheck,
+  Shield,
+  KeyRound,
   Settings,
   X,
   LucideIcon,
@@ -57,6 +59,8 @@ const mainNav: NavItem[] = [
   { name: 'Messages', href: '/dashboard/contacts', icon: Mail },
   { name: 'FAQ', href: '/dashboard/faqs', icon: HelpCircle },
   { name: 'Utilisateurs', href: '/dashboard/users', icon: ShieldCheck },
+  { name: 'Rôles', href: '/dashboard/roles', icon: Shield },
+  { name: 'Permissions', href: '/dashboard/permissions', icon: KeyRound },
 ];
 
 const bottomNav: NavItem[] = [

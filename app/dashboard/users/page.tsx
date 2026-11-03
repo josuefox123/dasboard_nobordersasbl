@@ -9,11 +9,21 @@ import {
   Edit2,
   Lock,
   CheckCircle2,
-  Info,
+  AlertCircle,
   Search,
+  UserPlus,
+  Send,
+  Eye,
+  Clock,
+  Mail,
+  Loader2,
+  Shield,
+  Calendar,
+  X,
+  ExternalLink,
 } from 'lucide-react';
 import { apiClient } from '@/lib/api-client';
-import { DashboardUser, UserRole } from '@/types/dashboard';
+import { DashboardUser, RoleItem } from '@/types/dashboard';
 import { Badge } from '@/components/ui/Badge';
 import { Modal } from '@/components/ui/Modal';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -22,12 +32,36 @@ import { BatchActionBar } from '@/components/ui/BatchActionBar';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<DashboardUser[]>([]);
+  const [roles, setRoles] = useState<RoleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'pending_activation' | 'suspended'>('all');
+
+  // Modales
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [detailUser, setDetailUser] = useState<DashboardUser | null>(null);
   const [selectedUser, setSelectedUser] = useState<DashboardUser | null>(null);
-  const [editRole, setEditRole] = useState<UserRole>('manager');
-  const [editStatus, setEditStatus] = useState<'active' | 'suspended'>('active');
-  const [notice, setNotice] = useState<string | null>(null);
+
+  // Formulaire de création / invitation
+  const [createForm, setCreateForm] = useState({
+    nom: '',
+    prenom: '',
+    email: '',
+    role_id: '',
+  });
+  const [createLoading, setCreateLoading] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+
+  // Action renvoi d'invitation
+  const [resendingUserId, setResendingUserId] = useState<string | null>(null);
+
+  // Formulaire modification
+  const [editRole, setEditRole] = useState<string>('');
+  const [editStatus, setEditStatus] = useState<string>('active');
+  const [editLoading, setEditLoading] = useState(false);
+
+  // Notifications
+  const [notice, setNotice] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
   // Pagination & Multi-Selection
   const [currentPage, setCurrentPage] = useState(1);
@@ -35,21 +69,146 @@ export default function UsersPage() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
-    loadUsers();
+    loadData();
   }, []);
 
-  async function loadUsers() {
+  async function loadData() {
+    setLoading(true);
     try {
-      const data = await apiClient.getUsers();
-      setUsers(data);
+      const [usersData, rolesData] = await Promise.all([
+        apiClient.getUsers(),
+        apiClient.getRoles().catch(() => []),
+      ]);
+      setUsers(usersData);
+      // Exclure formellement le rôle super_admin ainsi que les rôles inactifs
+      const assignableRoles = rolesData.filter((r) => {
+        const isInactive = r.isActive === false || r.is_active === false;
+        const isSuperAdmin =
+          r.name?.toLowerCase() === 'super_admin' ||
+          r.label?.toLowerCase().includes('super admin');
+        return !isInactive && !isSuperAdmin;
+      });
+      setRoles(assignableRoles);
+      if (assignableRoles.length > 0 && !createForm.role_id) {
+        setCreateForm((prev) => ({
+          ...prev,
+          role_id: assignableRoles[0].id,
+        }));
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Impossible de charger les utilisateurs.';
+      setNotice({ type: 'error', message: msg });
     } finally {
       setLoading(false);
     }
   }
 
+  // ── Création d'un administrateur (Envoi d'invitation) ──────────────────
+  const handleOpenCreate = () => {
+    setCreateForm({
+      nom: '',
+      prenom: '',
+      email: '',
+      role_id: roles[0]?.id || '',
+    });
+    setCreateError(null);
+    setIsCreateOpen(true);
+  };
+
+  const handleCreateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateError(null);
+
+    if (!createForm.nom.trim() || !createForm.prenom.trim() || !createForm.email.trim()) {
+      setCreateError('Veuillez renseigner le nom, le prénom et l’adresse e-mail.');
+      return;
+    }
+
+    if (!createForm.role_id) {
+      setCreateError('Veuillez sélectionner un rôle pour le nouvel utilisateur.');
+      return;
+    }
+
+    const selectedRole = roles.find((r) => r.id === createForm.role_id);
+    const roleLabel = selectedRole?.label || 'sélectionné';
+
+    setCreateLoading(true);
+    try {
+      const res = await apiClient.createAdminInvitation({
+        nom: createForm.nom.trim(),
+        prenom: createForm.prenom.trim(),
+        email: createForm.email.trim().toLowerCase(),
+        role_id: createForm.role_id,
+      });
+
+      if (res.email_sent === false) {
+        setNotice({
+          type: 'error',
+          message:
+            res.message ||
+            `Le compte a été créé, mais l’envoi de l’e-mail à l’utilisateur ${roleLabel} a échoué.`,
+        });
+      } else {
+        const targetLabel = res.invitation?.role?.label || roleLabel;
+        setNotice({
+          type: 'success',
+          message:
+            res.message ||
+            `L'invitation a été envoyée avec succès à l'utilisateur ${targetLabel}.`,
+        });
+      }
+      setIsCreateOpen(false);
+      await loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la création de l’invitation.';
+      setCreateError(msg);
+    } finally {
+      setCreateLoading(false);
+    }
+  };
+
+  // ── Renvoi d'invitation ────────────────────────────────────────────────
+  const handleResendInvitation = async (user: DashboardUser) => {
+    setResendingUserId(user.id);
+    try {
+      const res = await apiClient.resendInvitation({
+        userId: user.id,
+        email: user.email,
+        invitationId: user.invitation?.id,
+      });
+
+      const roleLabel = user.roleLabel || 'utilisateur';
+      setNotice({
+        type: 'success',
+        message:
+          res.message ||
+          `Une nouvelle invitation a été envoyée avec succès à l'utilisateur ${roleLabel}.`,
+      });
+      await loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Impossible de renvoyer l’invitation.';
+      setNotice({ type: 'error', message: msg });
+    } finally {
+      setResendingUserId(null);
+    }
+  };
+
+  // ── Consultation des détails ───────────────────────────────────────────
+  const handleOpenDetail = (user: DashboardUser) => {
+    setDetailUser(user);
+  };
+
+  // ── Modification (Rôle / Statut) ───────────────────────────────────────
   const handleOpenEdit = (user: DashboardUser) => {
+    if (user.role === 'SUPER_ADMIN' || user.role === 'super_admin') {
+      setNotice({
+        type: 'error',
+        message: 'Le compte Super Administrateur système ne peut pas être modifié.',
+      });
+      return;
+    }
     setSelectedUser(user);
-    setEditRole(user.role);
+    setEditRole(user.activeRole?.id || roles[0]?.id || '');
     setEditStatus(user.status);
   };
 
@@ -57,19 +216,41 @@ export default function UsersPage() {
     e.preventDefault();
     if (!selectedUser) return;
 
-    await apiClient.updateUserRole(selectedUser.id, editRole, editStatus);
-    await loadUsers();
-    setSelectedUser(null);
-    setNotice(`Droits de l'utilisateur ${selectedUser.name} mis à jour avec succès.`);
-    setTimeout(() => setNotice(null), 3000);
+    setEditLoading(true);
+    try {
+      await apiClient.updateUserRole(selectedUser.id, editRole as any, editStatus as any);
+      setSelectedUser(null);
+      setNotice({
+        type: 'success',
+        message: `Droits de l’utilisateur ${selectedUser.name} mis à jour avec succès.`,
+      });
+      await loadData();
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Erreur lors de la mise à jour des droits.';
+      setNotice({ type: 'error', message: msg });
+    } finally {
+      setEditLoading(false);
+    }
   };
 
+  // ── Filtres et Pagination ──────────────────────────────────────────────
   const filteredUsers = users.filter((u) => {
+    const q = searchQuery.toLowerCase();
     const matchesSearch =
-      u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      u.roleLabel.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+      u.name.toLowerCase().includes(q) ||
+      u.email.toLowerCase().includes(q) ||
+      u.roleLabel.toLowerCase().includes(q);
+
+    const matchesStatus =
+      statusFilter === 'all'
+        ? true
+        : statusFilter === 'active'
+        ? u.status === 'active'
+        : statusFilter === 'pending_activation'
+        ? u.status === 'pending_activation' || u.status === 'pending_verification'
+        : u.status === 'suspended';
+
+    return matchesSearch && matchesStatus;
   });
 
   const totalItems = filteredUsers.length;
@@ -77,6 +258,11 @@ export default function UsersPage() {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+
+  const activeCount = users.filter((u) => u.status === 'active').length;
+  const pendingCount = users.filter(
+    (u) => u.status === 'pending_activation' || u.status === 'pending_verification'
+  ).length;
 
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) =>
@@ -94,11 +280,11 @@ export default function UsersPage() {
 
   const handleBulkExportCsv = () => {
     const selected = users.filter((u) => selectedIds.includes(u.id));
-    const header = 'ID,Nom,Email,Role,Statut,DerniereConnexion\n';
+    const header = 'ID,Nom,Email,Role,Statut,DerniereConnexion,DateCreation\n';
     const rows = selected
       .map(
         (u) =>
-          `"${u.id}","${u.name}","${u.email}","${u.roleLabel}","${u.status}","${u.lastLogin || 'Jamais'}"`
+          `"${u.id}","${u.name}","${u.email}","${u.roleLabel}","${u.status}","${u.lastLogin || 'Jamais'}","${u.createdAt || ''}"`
       )
       .join('\n');
     const blob = new Blob([header + rows], { type: 'text/csv;charset=utf-8;' });
@@ -109,38 +295,96 @@ export default function UsersPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    setNotice(`Export de ${selected.length} utilisateur(s) généré avec succès.`);
-    setTimeout(() => setNotice(null), 3000);
+    setNotice({
+      type: 'success',
+      message: `Export de ${selected.length} utilisateur(s) généré avec succès.`,
+    });
+  };
+
+  // Helper statut badge
+  const renderStatusBadge = (status: string) => {
+    const s = status.toLowerCase();
+    if (s === 'active') {
+      return (
+        <Badge variant="success" dot>
+          Actif
+        </Badge>
+      );
+    }
+    if (s === 'pending_activation') {
+      return (
+        <Badge variant="warning" dot className="bg-amber-50 text-amber-900 border-amber-300">
+          En attente d’activation
+        </Badge>
+      );
+    }
+    if (s === 'pending_verification') {
+      return (
+        <Badge variant="warning" dot>
+          Vérification e-mail
+        </Badge>
+      );
+    }
+    return (
+      <Badge variant="error" dot>
+        Suspendu
+      </Badge>
+    );
   };
 
   return (
     <div className="space-y-6 animate-fade-in pt-6">
-      {/* Title */}
+      {/* Title & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
-            Utilisateurs & Permissions d’Accès
+          <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
+            <span>Utilisateurs & Permissions d’Accès</span>
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
-            Gestion des rôles de l’équipe No Borders ASBL et contrôle d’accès granulaire.
+            Gestion des comptes de l’équipe No Borders ASBL, rôles et envoi d’invitations sécurisées.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-bold px-3.5 py-1.5 rounded-2xl bg-[#E8F8F5] text-[#1F6F5C] border border-[#26B997]/30 shadow-xs">
-            {users.length} comptes autorisés
-          </span>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            className="btn-primary-gradient inline-flex items-center gap-2 self-start sm:self-auto cursor-pointer"
+          >
+            <UserPlus className="w-4 h-4" />
+            <span>Inviter un utilisateur</span>
+          </button>
         </div>
       </div>
 
       {notice && (
-        <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-2xl text-xs flex items-center gap-2 animate-fade-in">
-          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-          <span>{notice}</span>
+        <div
+          className={`p-3 rounded-2xl text-xs flex items-center justify-between gap-2 animate-fade-in ${
+            notice.type === 'success'
+              ? 'bg-emerald-50 border border-emerald-200 text-emerald-800'
+              : 'bg-red-50 border border-red-200 text-red-800'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            {notice.type === 'success' ? (
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 text-red-600 shrink-0" />
+            )}
+            <span>{notice.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setNotice(null)}
+            className="p-1 hover:bg-black/5 rounded-lg transition-colors cursor-pointer"
+            aria-label="Fermer la notification"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 
-      {/* Search Bar */}
+      {/* Search & Filters Bar */}
       <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-[0_12px_40px_-18px_rgba(38,185,151,0.12)] flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="relative w-full md:max-w-md">
           <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
@@ -152,9 +396,26 @@ export default function UsersPage() {
               setCurrentPage(1);
               setSelectedIds([]);
             }}
-            placeholder="Rechercher par nom, email ou rôle..."
+            placeholder="Rechercher par nom, e-mail ou rôle..."
             className="input-premium pl-10"
           />
+        </div>
+
+        <div className="flex items-center gap-2 w-full md:w-auto">
+          <span className="text-xs text-slate-400 font-medium">Statut :</span>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value as any);
+              setCurrentPage(1);
+            }}
+            className="input-premium text-xs py-2 px-3 font-medium bg-slate-50 cursor-pointer"
+          >
+            <option value="all">Tous les statuts ({users.length})</option>
+            <option value="active">Actifs ({activeCount})</option>
+            <option value="pending_activation">En attente ({pendingCount})</option>
+            <option value="suspended">Suspendus</option>
+          </select>
         </div>
       </div>
 
@@ -167,7 +428,7 @@ export default function UsersPage() {
         <button
           type="button"
           onClick={handleBulkExportCsv}
-          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5"
+          className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs transition-colors flex items-center gap-1.5 cursor-pointer"
         >
           <span>Exporter CSV</span>
         </button>
@@ -180,11 +441,25 @@ export default function UsersPage() {
             <Skeleton className="h-10 w-full" />
             <Skeleton className="h-14 w-full" />
             <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
           </div>
         ) : filteredUsers.length === 0 ? (
           <div className="p-12 text-center text-slate-500">
             <UserCheck className="w-10 h-10 text-slate-300 mx-auto mb-2" />
             <p className="font-semibold text-slate-700">Aucun utilisateur trouvé</p>
+            <p className="text-xs text-slate-400 mt-1">
+              {searchQuery ? 'Modifiez votre recherche ou vos filtres.' : 'Commencez par inviter un nouvel utilisateur.'}
+            </p>
+            {!searchQuery && (
+              <button
+                type="button"
+                onClick={handleOpenCreate}
+                className="btn-primary-gradient inline-flex items-center gap-2 mt-4 cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                <span>Inviter un utilisateur</span>
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto -mx-6 -mt-6 mb-0">
@@ -208,14 +483,18 @@ export default function UsersPage() {
                   <th className="py-4 px-4">Utilisateur</th>
                   <th className="py-4 px-6">Rôle</th>
                   <th className="py-4 px-6">Statut</th>
-                  <th className="py-4 px-6">Permissions Actives</th>
-                  <th className="py-4 px-6">Dernière Connexion</th>
+                  <th className="py-4 px-6">Date de création</th>
                   <th className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {paginatedUsers.map((user) => {
                   const isSelected = selectedIds.includes(user.id);
+                  const isPending =
+                    user.status === 'pending_activation' || user.status === 'pending_verification';
+                  const isSuperAdmin = user.role === 'SUPER_ADMIN' || user.role === 'super_admin';
+                  const isResending = resendingUserId === user.id;
+
                   return (
                     <tr
                       key={user.id}
@@ -235,17 +514,28 @@ export default function UsersPage() {
 
                       <td className="py-4 px-4">
                         <div className="flex items-center gap-3">
-                          <div className="relative w-9 h-9 rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0">
-                            <Image
-                              src={user.avatar || '/default-avatar.svg'}
-                              alt={user.name}
-                              width={36}
-                              height={36}
-                              className="w-full h-full object-cover"
-                            />
+                          <div className="relative w-9 h-9 rounded-full overflow-hidden border border-slate-200 bg-slate-100 shrink-0 flex items-center justify-center font-bold text-slate-600 text-xs uppercase">
+                            {user.avatar ? (
+                              <Image
+                                src={user.avatar}
+                                alt={user.name}
+                                width={36}
+                                height={36}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <span>{(user.prenom?.[0] || '') + (user.nom?.[0] || '') || 'U'}</span>
+                            )}
                           </div>
                           <div>
-                            <p className="font-bold text-slate-900">{user.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-bold text-slate-900">{user.name}</p>
+                              {isSuperAdmin && (
+                                <span title="Super Administrateur Système">
+                                  <ShieldCheck className="w-3.5 h-3.5 text-[#26B997]" />
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[11px] text-slate-400">{user.email}</p>
                           </div>
                         </div>
@@ -258,39 +548,63 @@ export default function UsersPage() {
                       </td>
 
                       <td className="py-4 px-6 whitespace-nowrap">
-                        {user.status === 'active' ? (
-                          <Badge variant="success">Actif</Badge>
-                        ) : (
-                          <Badge variant="error">Suspendu</Badge>
-                        )}
-                      </td>
-
-                      <td className="py-4 px-6">
-                        <div className="flex flex-wrap gap-1 max-w-xs">
-                          {user.permissions.map((perm) => (
-                            <span
-                              key={perm}
-                              className="text-[10px] bg-[#E8F8F5] text-[#1F6F5C] font-mono px-1.5 py-0.5 rounded border border-[#26B997]/20"
-                            >
-                              {perm}
-                            </span>
-                          ))}
-                        </div>
+                        {renderStatusBadge(user.status)}
                       </td>
 
                       <td className="py-4 px-6 text-slate-500 whitespace-nowrap">
-                        {user.lastLogin || 'Jamais'}
+                        {user.createdAt
+                          ? new Date(user.createdAt).toLocaleDateString('fr-FR', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                            })
+                          : '—'}
                       </td>
 
                       <td className="py-4 px-6 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => handleOpenEdit(user)}
-                          className="p-1.5 text-slate-600 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors"
-                          title="Modifier le rôle et le statut"
-                          aria-label={`Modifier le rôle de ${user.name}`}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
+                        <div className="flex items-center justify-end gap-1">
+                          {/* Détails */}
+                          <button
+                            type="button"
+                            onClick={() => handleOpenDetail(user)}
+                            className="p-1.5 text-slate-500 hover:text-[#26B997] hover:bg-[#E8F8F5] rounded-lg transition-colors cursor-pointer"
+                            title="Voir les détails"
+                            aria-label={`Consulter le profil de ${user.name}`}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+
+                          {/* Renvoyer l'invitation (uniquement si en attente d'activation) */}
+                          {isPending && (
+                            <button
+                              type="button"
+                              onClick={() => handleResendInvitation(user)}
+                              disabled={isResending}
+                              className="p-1.5 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                              title="Renvoyer l’invitation par e-mail"
+                              aria-label={`Renvoyer l'invitation à ${user.name}`}
+                            >
+                              {isResending ? (
+                                <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
+                              ) : (
+                                <Send className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+
+                          {/* Modifier droits (non permis pour SUPER_ADMIN) */}
+                          {!isSuperAdmin && (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEdit(user)}
+                              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              title="Modifier les droits"
+                              aria-label={`Modifier le rôle de ${user.name}`}
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );
@@ -311,59 +625,357 @@ export default function UsersPage() {
         </div>
       </div>
 
-      {/* Permissions Matrix Reference Table */}
+      {/* Permissions Matrix Reference (Dynamique selon les rôles enregistrés) */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm">
-        <h3 className="text-sm font-bold text-slate-900 mb-2">
-          Matrice des Rôles & Droits d’Accès
-        </h3>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-[#26B997]" />
+            <span>Matrice des Rôles & Droits d’Accès</span>
+          </h3>
+          <span className="text-xs text-slate-400">
+            {roles.length} rôle(s) actif(s) configuré(s)
+          </span>
+        </div>
         <p className="text-xs text-slate-500 mb-4">
-          Droits accordés à chaque rôle de l’équipe.
+          Responsabilités et permissions accordées aux différents rôles de la plateforme.
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-          <div className="p-3.5 rounded-xl border border-[#26B997]/30 bg-[#E8F8F5]/40">
-            <p className="font-bold text-[#1F6F5C] mb-1">Super Administrateur</p>
-            <p className="text-[11px] text-slate-600 mb-2">Accès complet sans restriction</p>
-            <ul className="list-disc list-inside text-[11px] text-slate-700 space-y-0.5">
-              <li>Gestion des comptes & clés</li>
-              <li>Paramètres globaux & paiements</li>
-              <li>Toutes les opérations boutique & dons</li>
-            </ul>
-          </div>
-
-          <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-            <p className="font-bold text-slate-900 mb-1">Gestionnaire Boutique</p>
-            <p className="text-[11px] text-slate-600 mb-2">Catalogue & logistique</p>
-            <ul className="list-disc list-inside text-[11px] text-slate-700 space-y-0.5">
-              <li>Ajout / modification de vélos</li>
-              <li>Mise à jour des stocks</li>
-              <li>Expéditions bpost & retraits</li>
-            </ul>
-          </div>
-
-          <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/40">
-            <p className="font-bold text-amber-900 mb-1">Trésorier / Dons</p>
-            <p className="text-[11px] text-slate-600 mb-2">Comptabilité & mécénat</p>
-            <ul className="list-disc list-inside text-[11px] text-slate-700 space-y-0.5">
-              <li>Suivi des flux financiers</li>
-              <li>Émission des reçus fiscaux belges</li>
-              <li>Rapprochements de virement</li>
-            </ul>
-          </div>
-
-          <div className="p-3.5 rounded-xl border border-slate-200 bg-slate-50">
-            <p className="font-bold text-slate-900 mb-1">Rédacteur Contenus</p>
-            <p className="text-[11px] text-slate-600 mb-2">Communication & blog</p>
-            <ul className="list-disc list-inside text-[11px] text-slate-700 space-y-0.5">
-              <li>Rédaction d’articles & ateliers</li>
-              <li>Traduction des contenus FR/NL/EN</li>
-              <li>Publication des actualités</li>
-            </ul>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+          {roles.map((r) => (
+            <div
+              key={r.id}
+              className={`p-3.5 rounded-xl border transition-all ${
+                r.is_system
+                  ? 'border-[#26B997]/30 bg-[#E8F8F5]/40'
+                  : 'border-slate-200 bg-slate-50'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-1">
+                <p
+                  className={`font-bold ${
+                    r.is_system ? 'text-[#1F6F5C]' : 'text-slate-900'
+                  }`}
+                >
+                  {r.label}
+                </p>
+                {r.is_system && (
+                  <span className="text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded bg-[#26B997]/20 text-[#1F6F5C]">
+                    Système
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-600 mb-2 line-clamp-2">
+                {r.description || 'Aucune description spécifique fournie.'}
+              </p>
+              <div className="text-[11px] text-slate-500 font-mono">
+                {r.permissions_count ?? r.permissions?.length ?? 0} permission(s)
+              </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Edit Role Modal */}
+      {/* ── MODALE CRÉATION / INVITATION D'UN ADMINISTRATEUR ──────────────── */}
+      <Modal
+        isOpen={isCreateOpen}
+        onClose={() => setIsCreateOpen(false)}
+        title="Inviter un utilisateur"
+        description="Créez le compte utilisateur et envoyez-lui un lien sécurisé par e-mail pour définir son mot de passe."
+        maxWidth="md"
+      >
+        <form onSubmit={handleCreateSubmit} className="space-y-4">
+          {createError && (
+            <div className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{createError}</span>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="label-premium">Nom *</label>
+              <input
+                type="text"
+                required
+                value={createForm.nom}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, nom: e.target.value }))
+                }
+                placeholder="Dupont"
+                className="input-premium"
+              />
+            </div>
+            <div>
+              <label className="label-premium">Prénom *</label>
+              <input
+                type="text"
+                required
+                value={createForm.prenom}
+                onChange={(e) =>
+                  setCreateForm((prev) => ({ ...prev, prenom: e.target.value }))
+                }
+                placeholder="Jean"
+                className="input-premium"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="label-premium">Adresse e-mail professionnelle *</label>
+            <input
+              type="email"
+              required
+              value={createForm.email}
+              onChange={(e) =>
+                setCreateForm((prev) => ({ ...prev, email: e.target.value }))
+              }
+              placeholder="jean.dupont@nobordersasbl.be"
+              className="input-premium"
+            />
+          </div>
+
+          <div>
+            <label className="label-premium">Rôle d’accès attribué *</label>
+            <select
+              value={createForm.role_id}
+              onChange={(e) =>
+                setCreateForm((prev) => ({ ...prev, role_id: e.target.value }))
+              }
+              className="input-premium font-medium"
+            >
+              {roles.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.label}
+                </option>
+              ))}
+            </select>
+            {createForm.role_id && (
+              <p className="text-[11px] text-slate-500 mt-1 italic">
+                {roles.find((r) => r.id === createForm.role_id)?.description ||
+                  'Rôle avec permissions configurées.'}
+              </p>
+            )}
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-600 text-[11px] flex items-start gap-2">
+            <Mail className="w-4 h-4 text-[#26B997] shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-slate-800">
+                Invitation par e-mail automatique
+              </p>
+              <p>
+                Le nouvel utilisateur recevra un lien sécurisé valable pendant{' '}
+                <strong>48 heures</strong> pour définir son mot de passe et activer
+                son compte. Aucun mot de passe temporaire n’est requis.
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+            <button
+              type="button"
+              onClick={() => setIsCreateOpen(false)}
+              disabled={createLoading}
+              className="btn-secondary-soft cursor-pointer"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={createLoading}
+              className="btn-primary-gradient flex items-center gap-2 cursor-pointer disabled:opacity-50"
+            >
+              {createLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Envoi en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  <span>Envoyer l’invitation</span>
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* ── MODALE CONSULTATION DÉTAILS D'UN UTILISATEUR ─────────────────── */}
+      <Modal
+        isOpen={Boolean(detailUser)}
+        onClose={() => setDetailUser(null)}
+        title={detailUser ? `Profil : ${detailUser.name}` : 'Détails de l’utilisateur'}
+        description="Informations du compte, statut d’activation et permissions associées."
+        maxWidth="lg"
+      >
+        {detailUser && (
+          <div className="space-y-5 text-xs">
+            {/* Carte Identité */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full overflow-hidden border border-slate-300 bg-white shrink-0 flex items-center justify-center font-bold text-slate-700 text-sm uppercase">
+                {detailUser.avatar ? (
+                  <Image
+                    src={detailUser.avatar}
+                    alt={detailUser.name}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span>
+                    {(detailUser.prenom?.[0] || '') + (detailUser.nom?.[0] || '') || 'U'}
+                  </span>
+                )}
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-slate-900 text-sm">
+                    {detailUser.name}
+                  </h3>
+                  {renderStatusBadge(detailUser.status)}
+                </div>
+                <p className="text-slate-500">{detailUser.email}</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  ID : <span className="font-mono">{detailUser.id}</span>
+                </p>
+              </div>
+            </div>
+
+            {/* Grille d'informations */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-white">
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">
+                  Rôle Attribué
+                </p>
+                <p className="font-bold text-slate-900 text-sm">
+                  {detailUser.roleLabel}
+                </p>
+                <p className="text-slate-500 text-[11px] mt-0.5">
+                  Type : {detailUser.role}
+                </p>
+              </div>
+
+              <div className="p-3.5 rounded-xl border border-slate-200 bg-white">
+                <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-1">
+                  Date de création
+                </p>
+                <p className="font-bold text-slate-900">
+                  {detailUser.createdAt
+                    ? new Date(detailUser.createdAt).toLocaleDateString('fr-FR', {
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })
+                    : '—'}
+                </p>
+                <p className="text-slate-500 text-[11px] mt-0.5">
+                  Dernière connexion : {detailUser.lastLogin || 'Aucune enregistrée'}
+                </p>
+              </div>
+            </div>
+
+            {/* Bloc d'invitation (si présent) */}
+            {detailUser.invitation && (
+              <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50/50">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-900">
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Dernière invitation envoyée</span>
+                  </div>
+                  {detailUser.invitation.acceptedAt ? (
+                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                      Acceptée
+                    </span>
+                  ) : new Date(detailUser.invitation.expiresAt) < new Date() ? (
+                    <span className="text-[10px] font-bold text-red-700 bg-red-100 px-2 py-0.5 rounded-full">
+                      Expirée
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded-full">
+                      En cours de validité
+                    </span>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-[11px] text-slate-600 mt-2">
+                  <div>
+                    <span className="text-slate-400">Émise le :</span>{' '}
+                    {new Date(detailUser.invitation.createdAt).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                  <div>
+                    <span className="text-slate-400">Expire le :</span>{' '}
+                    {new Date(detailUser.invitation.expiresAt).toLocaleDateString('fr-FR', {
+                      day: '2-digit',
+                      month: 'short',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                </div>
+
+                {!detailUser.invitation.acceptedAt && (
+                  <div className="mt-3 pt-2 border-t border-amber-200/60 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDetailUser(null);
+                        handleResendInvitation(detailUser);
+                      }}
+                      className="btn-secondary-soft text-amber-800 border-amber-300 hover:bg-amber-100 flex items-center gap-1.5 text-xs py-1.5 px-3 cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Renvoyer l’invitation maintenant</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Permissions actives */}
+            <div>
+              <p className="text-slate-400 text-[10px] font-bold uppercase tracking-wider mb-2">
+                Permissions associées ({detailUser.permissions.length})
+              </p>
+              {detailUser.permissions.length === 0 ? (
+                <p className="text-slate-400 italic">Aucune permission spécifique.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto p-2 bg-slate-50 rounded-xl border border-slate-200">
+                  {detailUser.permissions.map((p) => (
+                    <span
+                      key={p}
+                      className="font-mono text-[10px] bg-white text-slate-700 px-2 py-0.5 rounded border border-slate-200 shadow-2xs"
+                    >
+                      {p}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t border-slate-100 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setDetailUser(null)}
+                className="btn-secondary-soft cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+          </div>
+        )}
+      </Modal>
+
+      {/* ── MODALE MODIFICATION RÔLE & STATUT ─────────────────────────────── */}
       <Modal
         isOpen={Boolean(selectedUser)}
         onClose={() => setSelectedUser(null)}
@@ -372,30 +984,27 @@ export default function UsersPage() {
         maxWidth="md"
       >
         {selectedUser && (
-          <form onSubmit={handleSaveRole} className="space-y-5">
+          <form onSubmit={handleSaveRole} className="space-y-4">
             <div>
-              <label className="label-premium">
-                Rôle attribué au membre
-              </label>
+              <label className="label-premium">Rôle attribué au membre</label>
               <select
                 value={editRole}
-                onChange={(e) => setEditRole(e.target.value as UserRole)}
+                onChange={(e) => setEditRole(e.target.value)}
                 className="input-premium font-medium"
               >
-                <option value="super_admin">Super Administrateur</option>
-                <option value="manager">Gestionnaire Boutique & Stocks</option>
-                <option value="treasurer">Trésorier & Dons</option>
-                <option value="editor">Rédacteur Web & Événements</option>
+                {roles.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.label}
+                  </option>
+                ))}
               </select>
             </div>
 
             <div>
-              <label className="label-premium">
-                Statut du compte
-              </label>
+              <label className="label-premium">Statut du compte</label>
               <select
                 value={editStatus}
-                onChange={(e) => setEditStatus(e.target.value as any)}
+                onChange={(e) => setEditStatus(e.target.value)}
                 className="input-premium font-medium"
               >
                 <option value="active">Actif (Accès autorisé)</option>
@@ -407,15 +1016,17 @@ export default function UsersPage() {
               <button
                 type="button"
                 onClick={() => setSelectedUser(null)}
-                className="btn-secondary-soft"
+                disabled={editLoading}
+                className="btn-secondary-soft cursor-pointer"
               >
                 Annuler
               </button>
               <button
                 type="submit"
-                className="btn-primary-gradient"
+                disabled={editLoading}
+                className="btn-primary-gradient cursor-pointer"
               >
-                Mettre à jour les accès
+                {editLoading ? 'Enregistrement...' : 'Mettre à jour les accès'}
               </button>
             </div>
           </form>

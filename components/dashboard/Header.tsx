@@ -18,6 +18,20 @@ interface HeaderProps {
     prenom: string;
     email: string;
     role: string;
+    role_label?: string;
+    roleLabel?: string;
+    role_item?: {
+      id: string;
+      name: string;
+      label: string;
+      description?: string | null;
+    } | null;
+    roleItem?: {
+      id: string;
+      name: string;
+      label: string;
+      description?: string | null;
+    } | null;
     profile_photo_url?: string | null;
   } | null;
 }
@@ -70,15 +84,19 @@ export const Header: React.FC<HeaderProps> = ({
 
   const displayName = user
     ? [user.prenom, user.nom].filter(Boolean).join(' ') || user.email
-    : 'Administrateur';
+    : 'Utilisateur';
 
-  const displayRole = user
-    ? user.role === 'SUPER_ADMIN'
+  const displayRole =
+    user?.role_item?.label ||
+    user?.roleItem?.label ||
+    user?.role_label ||
+    user?.roleLabel ||
+    (user?.role === 'SUPER_ADMIN'
       ? 'Super Administrateur'
-      : user.role === 'ADMIN'
+      : user?.role === 'ADMIN'
         ? 'Administrateur'
-        : user.role
-    : 'Espace Admin';
+        : user?.role) ||
+    'Sans rôle';
 
   const avatarSrc = getMediaUrl(user?.profile_photo_url);
 
@@ -296,29 +314,41 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
 
             {/* Profil */}
-            <Link
-              href="/dashboard/profile"
-              className="flex items-center gap-3 p-1.5 cursor-pointer"
-              title="Mon Profil"
-            >
-              <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-slate-100">
-                <Image
-                  src={avatarSrc}
-                  alt={displayName}
-                  width={40}
-                  height={40}
-                  className="w-full h-full object-cover"
-                  priority
-                  unoptimized={avatarSrc !== '/default-avatar.svg'}
-                />
+            {user ? (
+              <Link
+                href="/dashboard/profile"
+                className="flex items-center gap-3 p-1.5 cursor-pointer rounded-xl hover:bg-slate-50 transition-colors"
+                title={`${displayName} — ${displayRole}`}
+              >
+                <div className="relative w-10 h-10 rounded-full overflow-hidden border border-slate-200 shadow-xs shrink-0 bg-slate-100">
+                  <Image
+                    src={avatarSrc}
+                    alt={displayName}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                    priority
+                    unoptimized={avatarSrc !== '/default-avatar.svg'}
+                  />
+                </div>
+                <div className="hidden sm:block leading-tight text-left">
+                  <p className="text-sm font-bold text-slate-900 truncate max-w-[170px]">
+                    {displayName}
+                  </p>
+                  <p className="text-[11px] font-medium text-emerald-700 truncate max-w-[170px] mt-0.5">
+                    {displayRole}
+                  </p>
+                </div>
+              </Link>
+            ) : (
+              <div className="flex items-center gap-2.5 p-1.5 animate-pulse">
+                <div className="w-10 h-10 rounded-full bg-slate-200 shrink-0" />
+                <div className="hidden sm:block space-y-1">
+                  <div className="w-24 h-3 bg-slate-200 rounded" />
+                  <div className="w-16 h-2 bg-slate-200 rounded" />
+                </div>
               </div>
-              <div className="hidden sm:block leading-tight text-left">
-                <p className="text-sm font-bold text-slate-900 truncate max-w-[160px]">
-                  {displayName}
-                </p>
-                <p className="text-[11px] text-slate-500">{displayRole}</p>
-              </div>
-            </Link>
+            )}
 
             {/* Boutons de déconnexion */}
             <div className="flex items-center gap-1">

@@ -20,11 +20,23 @@ export default function ResetPasswordPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSessionInvalid, setIsSessionInvalid] = useState(false);
+  const [tokenFromUrl, setTokenFromUrl] = useState<string | null>(null);
 
   useEffect(() => {
     // Préchauffer CSRF et précharger /login
     apiClient.warmupCsrf();
     router.prefetch('/login');
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlToken =
+        params.get('token') ||
+        params.get('invitation_token') ||
+        params.get('resetToken');
+      if (urlToken) {
+        setTokenFromUrl(urlToken);
+      }
+    }
   }, [router]);
 
   // Critères de sécurité
@@ -55,6 +67,7 @@ export default function ResetPasswordPage() {
       await apiClient.resetPassword({
         password,
         password_confirmation: confirmPassword,
+        resetToken: tokenFromUrl || undefined,
       });
       console.debug(`[auth/reset-password] API: ${Math.round(performance.now() - t0)}ms`);
       // Nettoyer l'email mémorisé pour la réinitialisation

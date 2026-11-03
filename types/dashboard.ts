@@ -187,18 +187,46 @@ export interface PaymentRecord {
   createdAt: string;
 }
 
-export type UserRole = 'super_admin' | 'manager' | 'editor' | 'treasurer';
+export type UserRole = 'super_admin' | 'manager' | 'editor' | 'treasurer' | string;
 
 export interface DashboardUser {
   id: string;
+  nom?: string;
+  prenom?: string;
   name: string;
   email: string;
   role: UserRole;
   roleLabel: string;
-  status: 'active' | 'suspended';
+  status: 'active' | 'suspended' | 'pending_activation' | 'pending_verification' | string;
   permissions: string[];
   lastLogin?: string;
   avatar?: string;
+  activeRole?: {
+    id: string;
+    name: string;
+    label: string;
+  } | null;
+  invitation?: {
+    id: string;
+    expiresAt: string;
+    acceptedAt: string | null;
+    createdAt: string;
+  } | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CreateAdminPayload {
+  nom: string;
+  prenom: string;
+  email: string;
+  role_id: string;
+}
+
+export interface ResendInvitationPayload {
+  email?: string;
+  userId?: string;
+  invitationId?: string;
 }
 
 export interface WebsiteSettings {
@@ -262,3 +290,56 @@ export interface OverviewMetrics {
   lowStockCount: number;
   recentSalesData: { month: string; sales: number; donations: number }[];
 }
+
+export interface PermissionItem {
+  id: string;
+  name: string;
+  module: string;
+  label: string;
+  description: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PaginatedPermissionsResult {
+  success: boolean;
+  message: string;
+  data: PermissionItem[];
+  pagination: {
+    current_page: number;
+    per_page: number;
+    total: number;
+    total_pages: number;
+  };
+  modules?: string[];
+}
+
+export interface RoleItem {
+  id: string;
+  name: string;
+  label: string;
+  description: string | null;
+  is_system: boolean;
+  is_active?: boolean;
+  isActive?: boolean;
+  created_at: string;
+  updated_at: string;
+  permissions_count: number;
+  permissions: PermissionItem[];
+}
+
+export interface CreateRolePayload {
+  name: string;
+  label: string;
+  description?: string;
+  permissions?: string[];
+}
+
+export interface UpdateRolePayload {
+  name?: string;
+  label?: string;
+  description?: string;
+  permissions?: string[];
+}
+
+
