@@ -336,11 +336,6 @@ export default function RolesPage() {
             <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               Gestion des rôles
             </h1>
-            {!loading && !error && (
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#E8F8F5] text-[#1F6F5C] border border-[#26B997]/20">
-                {roles.length} rôle{roles.length > 1 ? 's' : ''}
-              </span>
-            )}
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
             Définissez et administrez les rôles d&apos;accès ainsi que les permissions attribuées aux utilisateurs de la plateforme.
@@ -511,7 +506,6 @@ export default function RolesPage() {
                 <tr>
                   <th className="py-3.5 pl-6 pr-4 w-60">Nom du rôle</th>
                   <th className="py-3.5 px-6 w-48">Identifiant technique</th>
-                  <th className="py-3.5 px-6">Description</th>
                   <th className="py-3.5 px-6 w-36">Permissions</th>
                   <th className="py-3.5 px-6 w-32">Statut</th>
                   <th className="py-3.5 px-6 w-36">Date de création</th>
@@ -551,18 +545,6 @@ export default function RolesPage() {
                       <code className="px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 font-mono text-[11px] font-semibold border border-slate-200/70 inline-block">
                         {role.name}
                       </code>
-                    </td>
-
-                    {/* Description tronquée */}
-                    <td className="py-4 px-6 max-w-xs md:max-w-md">
-                      <div
-                        className="overflow-hidden text-ellipsis whitespace-nowrap text-slate-600 text-xs cursor-default"
-                        title={role.description || 'Aucune description renseignée'}
-                      >
-                        {role.description || (
-                          <span className="text-slate-400 italic">Aucune description</span>
-                        )}
-                      </div>
                     </td>
 
                     {/* Permissions attribuées */}
